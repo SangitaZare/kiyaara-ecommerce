@@ -1,4 +1,4 @@
-﻿namespace Day17MiddlewareCors.Models;
+﻿namespace Kiyaara.Api.Models;
 
 // The two kinds of account. Used in [Authorize(Roles = UserRoles.Admin)] and in the token.
 public static class UserRoles

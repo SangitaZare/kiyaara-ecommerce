@@ -1,8 +1,8 @@
-﻿using Day17MiddlewareCors.Models;
+﻿using Kiyaara.Api.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
-namespace Day17MiddlewareCors.Data;
+namespace Kiyaara.Api.Data;
 
 // The Kiyaara database. Each DbSet is a table; OnModelCreating adds the rules.
 public class KiyaaraDbContext(DbContextOptions<KiyaaraDbContext> options) : DbContext(options)

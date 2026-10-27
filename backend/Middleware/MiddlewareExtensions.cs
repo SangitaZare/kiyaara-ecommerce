@@ -1,4 +1,4 @@
-﻿namespace Day17MiddlewareCors.Middleware;
+﻿namespace Kiyaara.Api.Middleware;
 
 public static class MiddlewareExtensions
 {

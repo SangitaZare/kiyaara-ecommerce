@@ -1,6 +1,6 @@
-﻿using Day17MiddlewareCors.Models;
+﻿using Kiyaara.Api.Models;
 
-namespace Day17MiddlewareCors.Data;
+namespace Kiyaara.Api.Data;
 
 // Six sample orders so the admin panel has something to show right after the API starts.
 // They count as orders placed before today's stock was counted, so they don't change the stock.

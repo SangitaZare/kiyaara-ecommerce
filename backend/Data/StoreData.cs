@@ -1,6 +1,6 @@
-﻿using Day17MiddlewareCors.Models;
+﻿using Kiyaara.Api.Models;
 
-namespace Day17MiddlewareCors.Data;
+namespace Kiyaara.Api.Data;
 
 // One shared in-memory "database" for the whole API.
 // Registered as a singleton in Program.cs, so every controller sees the same lists.

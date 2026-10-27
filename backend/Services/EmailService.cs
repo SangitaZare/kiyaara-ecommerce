@@ -1,4 +1,4 @@
-﻿namespace Day17MiddlewareCors.Services;
+﻿namespace Kiyaara.Api.Services;
 
 // Everything in the API sends email through this one interface.
 // Today it is ConsoleEmailService; later a real sender (Gmail, Brevo, Resend) replaces it

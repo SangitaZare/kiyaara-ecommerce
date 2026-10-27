@@ -2,7 +2,7 @@ using MailKit.Net.Smtp;
 using MailKit.Security;
 using MimeKit;
 
-namespace Day17MiddlewareCors.Services;
+namespace Kiyaara.Api.Services;
 
 // The "Smtp" block in appsettings / user-secrets
 public class SmtpSettings

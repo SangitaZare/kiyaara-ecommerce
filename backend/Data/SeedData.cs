@@ -1,6 +1,6 @@
-﻿using Day17MiddlewareCors.Models;
+﻿using Kiyaara.Api.Models;
 
-namespace Day17MiddlewareCors.Data;
+namespace Kiyaara.Api.Data;
 
 // Starter catalogue, kept in memory. A database replaces this in Phase 4.
 public static class SeedData

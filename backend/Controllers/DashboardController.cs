@@ -1,10 +1,10 @@
-﻿using Day17MiddlewareCors.Data;
-using Day17MiddlewareCors.Models;
+﻿using Kiyaara.Api.Data;
+using Kiyaara.Api.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace Day17MiddlewareCors.Controllers;
+namespace Kiyaara.Api.Controllers;
 
 // Lives at /api/dashboard, not /api/admin: the Day 17 short-circuit middleware blocks /api/admin.
 [ApiController]

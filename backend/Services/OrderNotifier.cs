@@ -1,9 +1,9 @@
 ﻿using System.Globalization;
-using Day17MiddlewareCors.Data;
-using Day17MiddlewareCors.Models;
+using Kiyaara.Api.Data;
+using Kiyaara.Api.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace Day17MiddlewareCors.Services;
+namespace Kiyaara.Api.Services;
 
 // Emails the customer when their order is placed, shipped, delivered or cancelled.
 // A failed email is written to the log and never stops the order itself.

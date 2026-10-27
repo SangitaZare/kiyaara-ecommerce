@@ -2,7 +2,7 @@
 
 #nullable disable
 
-namespace Day17MiddlewareCors.Migrations
+namespace Kiyaara.Api.Migrations
 {
     /// <inheritdoc />
     public partial class AddRoleColumn : Migration

@@ -1,15 +1,15 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
-using Day17MiddlewareCors.Data;
-using Day17MiddlewareCors.Models;
-using Day17MiddlewareCors.Services;
+using Kiyaara.Api.Data;
+using Kiyaara.Api.Models;
+using Kiyaara.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
-namespace Day17MiddlewareCors.Controllers;
+namespace Kiyaara.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]

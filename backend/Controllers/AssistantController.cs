@@ -1,8 +1,8 @@
-﻿using Day17MiddlewareCors.Assistant;
+﻿using Kiyaara.Api.Assistant;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Day17MiddlewareCors.Controllers;
+namespace Kiyaara.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]

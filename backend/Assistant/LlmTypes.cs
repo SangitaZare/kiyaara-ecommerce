@@ -1,6 +1,6 @@
 ﻿using System.Text.Json;
 
-namespace Day17MiddlewareCors.Assistant;
+namespace Kiyaara.Api.Assistant;
 
 // The one door to any model. Gemini today, Claude or another provider later.
 public interface ILlmClient

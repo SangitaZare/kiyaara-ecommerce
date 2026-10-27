@@ -1,8 +1,8 @@
-﻿using Day17MiddlewareCors.Models;
+﻿using Kiyaara.Api.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
-namespace Day17MiddlewareCors.Data;
+namespace Kiyaara.Api.Data;
 
 // Called by EF Core every time the API starts and applies migrations (UseSeeding in Program.cs).
 // 1. An EMPTY database gets the 12 products and the 6 sample orders.

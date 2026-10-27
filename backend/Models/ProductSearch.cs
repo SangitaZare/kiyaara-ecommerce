@@ -1,4 +1,4 @@
-﻿namespace Day17MiddlewareCors.Models;
+﻿namespace Kiyaara.Api.Models;
 
 // What a shopper (or the AI agent) can ask for. Every field is optional.
 public class ProductSearchQuery

@@ -1,4 +1,4 @@
-﻿namespace Day17MiddlewareCors.Models;
+﻿namespace Kiyaara.Api.Models;
 
 // Everything the admin dashboard shows, in one response
 public class DashboardSummary

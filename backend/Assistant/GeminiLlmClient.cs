@@ -3,7 +3,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Day17MiddlewareCors.Assistant;
+namespace Kiyaara.Api.Assistant;
 
 public class GeminiLlmClient(HttpClient http, IConfiguration config) : ILlmClient
 {

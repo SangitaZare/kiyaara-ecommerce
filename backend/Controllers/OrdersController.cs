@@ -1,11 +1,11 @@
-﻿using Day17MiddlewareCors.Data;
-using Day17MiddlewareCors.Models;
-using Day17MiddlewareCors.Services;
+﻿using Kiyaara.Api.Data;
+using Kiyaara.Api.Models;
+using Kiyaara.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace Day17MiddlewareCors.Controllers;
+namespace Kiyaara.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]

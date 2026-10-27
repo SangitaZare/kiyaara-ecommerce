@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Day17MiddlewareCors.Models;
+namespace Kiyaara.Api.Models;
 
 // ---------- What the Angular pages send ----------
 

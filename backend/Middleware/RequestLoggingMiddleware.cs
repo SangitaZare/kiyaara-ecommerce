@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 
-namespace Day17MiddlewareCors.Middleware;
+namespace Kiyaara.Api.Middleware;
 
 public class RequestLoggingMiddleware
 {

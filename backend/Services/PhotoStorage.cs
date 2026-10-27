@@ -1,4 +1,4 @@
-namespace Day17MiddlewareCors.Services;
+namespace Kiyaara.Api.Services;
 
 // What POST api/products/photo sends back: { "url": "/uploads/products/3f9c2a7e....jpg" }
 public record PhotoUploadResponse(string Url);

@@ -1,10 +1,10 @@
 ﻿using System.Security.Claims;
 using System.Text;
-using Day17MiddlewareCors.Models;
+using Kiyaara.Api.Models;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 
-namespace Day17MiddlewareCors.Services;
+namespace Kiyaara.Api.Services;
 
 // The "Jwt" block in appsettings.json
 public class JwtSettings
