@@ -1,0 +1,103 @@
+@if (order(); as o) {
+  <div class="wrap">
+
+    <!-- ===== Status ===== -->
+    <section class="card hero">
+      @if (o.status === 'Cancelled') {
+        <div class="tick cancelled"><mat-icon>close</mat-icon></div>
+      } @else {
+        <div class="tick"><mat-icon>check</mat-icon></div>
+      }
+      <h1>{{ headline() }}</h1>
+
+      @switch (o.status) {
+        @case ('Delivered') {
+          <p class="lead">Order <strong>{{ o.orderNumber }}</strong> has reached you. We hope you love it.</p>
+        }
+        @case ('Cancelled') {
+          <p class="lead">Order <strong>{{ o.orderNumber }}</strong> was cancelled, so nothing will be delivered or charged.</p>
+        }
+        @default {
+          <p class="lead">
+            Thank you for shopping with Kiyaara. Order <strong>{{ o.orderNumber }}</strong> arrives by {{ deliveryLong() }}.
+          </p>
+        }
+      }
+
+      @if (o.status !== 'Cancelled') {
+        <ol class="tracker" aria-label="Order progress">
+          @for (s of steps(); track s.label) {
+            <li [class.done]="s.done">
+              <span class="dot">@if (s.done) { <mat-icon>check</mat-icon> }</span>
+              <span class="step-label">{{ s.label }}</span>
+              <span class="step-when">{{ s.when }}</span>
+            </li>
+          }
+        </ol>
+      }
+    </section>
+
+    <!-- ===== Address and payment ===== -->
+    <div class="pair">
+      <section class="card">
+        <h2>Delivering to</h2>
+        <p class="text">
+          <strong>{{ o.address.fullName }}</strong>
+          <span class="tag">{{ o.address.addressType }}</span><br>
+          {{ o.address.house }}, {{ o.address.area }}<br>
+          @if (o.address.landmark) { {{ o.address.landmark }}<br> }
+          {{ o.address.city }}, {{ o.address.state }} {{ o.address.pincode }}<br>
+          Mobile: {{ o.address.mobile }}
+        </p>
+      </section>
+      <section class="card">
+        <h2>Payment</h2>
+        @if (o.status === 'Cancelled') {
+          <p class="text">Nothing to pay: this order was cancelled.</p>
+        } @else if (o.paymentMethod === 'COD') {
+          <p class="text">Cash on delivery. Pay <strong>{{ inr(o.total) }}</strong> by cash or UPI when your order arrives.</p>
+        } @else {
+          <p class="text">UPI (demo). This is a demo store, so no money was taken.</p>
+        }
+      </section>
+    </div>
+
+    <!-- ===== Items ===== -->
+    <section class="card items">
+      <h2>Items in this order ({{ o.itemCount }})</h2>
+      @for (item of o.items; track item.productId + item.size) {
+        <div class="item">
+          <img [src]="imageOf(item)" [alt]="item.brand + ' ' + item.name">
+          <div class="item-text">
+            <div class="brand">{{ item.brand }}</div>
+            <div class="name">{{ item.name }}</div>
+            <div class="meta">@if (item.size) {Size {{ item.size }}, }qty {{ item.quantity }}</div>
+          </div>
+          <div class="line-price">{{ inr(item.price * item.quantity) }}</div>
+        </div>
+      }
+      <hr>
+      @if (o.totalMrp > o.subtotal) {
+        <div class="row"><span>You saved</span><span class="save">{{ inr(o.totalMrp - o.subtotal) }}</span></div>
+      }
+      <div class="row">
+        <span>Delivery</span>
+        @if (o.deliveryFee === 0) { <span class="save">Free</span> } @else { <span>{{ inr(o.deliveryFee) }}</span> }
+      </div>
+      <div class="row total"><span>Order total</span><span>{{ inr(o.total) }}</span></div>
+    </section>
+
+    <div class="actions">
+      <a mat-flat-button class="cta" routerLink="/shop">Continue shopping</a>
+      <p class="note">Demo store. This order is saved by the Kiyaara API; no payment is taken.</p>
+    </div>
+  </div>
+} @else if (order() === null) {
+  <div class="wrap state">
+    <h1>We couldn't find this order</h1>
+    <p>Orders are kept in memory, so they disappear when the API restarts.</p>
+    <a mat-flat-button routerLink="/">Go to home</a>
+  </div>
+} @else {
+  <div class="wrap state"><p>Loading your order...</p></div>
+}

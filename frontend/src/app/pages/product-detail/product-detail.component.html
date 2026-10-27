@@ -1,0 +1,111 @@
+@if (product(); as p) {
+  <div class="container detail">
+
+    <nav class="crumbs" aria-label="Breadcrumb">
+      <a routerLink="/">Home</a> /
+      <a [routerLink]="['/shop', p.gender.toLowerCase()]">{{ p.gender }}</a> /
+      <a [routerLink]="['/shop', p.gender.toLowerCase()]" [queryParams]="{ category: p.category }">{{ p.category }}</a>
+    </nav>
+
+    <div class="detail-grid">
+      <div class="gallery">
+        <img [src]="imageOf(p)" [alt]="p.brand + ' ' + p.name">
+      </div>
+
+      <div>
+        <h1 class="brand">{{ p.brand }}</h1>
+        <p class="name">{{ p.name }}</p>
+
+        @if (p.rating) {
+          <p class="rating">
+            <span class="stars">{{ p.rating }} <mat-icon>star</mat-icon></span>
+            {{ p.ratingCount.toLocaleString('en-IN') }} ratings
+          </p>
+        }
+
+        <div class="price-block">
+          <span class="now">{{ inr(p.price) }}</span>
+          @if (off()) {
+            <span class="mrp">MRP {{ inr(p.mrp) }}</span>
+            <span class="off">{{ off() }}% off</span>
+          }
+          <p class="tax">Inclusive of all taxes</p>
+        </div>
+
+        @if (p.sizes.length) {
+          <div class="block">
+            <div class="block-head">
+              <h2>Select size</h2>
+              @if (sizeError()) {
+                <span class="error" role="alert">Choose a size first</span>
+              }
+            </div>
+            <div class="sizes">
+              @for (s of p.sizes; track s) {
+                <button type="button" class="size" [class.on]="selectedSize() === s"
+                        [attr.aria-pressed]="selectedSize() === s" (click)="chooseSize(s)">{{ s }}</button>
+              }
+            </div>
+          </div>
+        }
+
+        @if (p.stock === 0) {
+          <p class="stock out">Sold out. Check back soon.</p>
+        } @else if (p.stock < 5) {
+          <p class="stock low">Only {{ p.stock }} left in stock</p>
+        }
+
+        <button mat-flat-button class="bag-btn" [disabled]="p.stock === 0" (click)="addToBag(p)">
+          <mat-icon>shopping_bag</mat-icon>
+          {{ p.stock === 0 ? 'Sold out' : 'Add to bag' }}
+        </button>
+
+        <div class="block section">
+          <h2>Check delivery</h2>
+          <div class="pin-row">
+            <input aria-label="Pincode" placeholder="Enter pincode" maxlength="6" inputmode="numeric"
+                   [value]="pincode()" (input)="pincode.set($any($event.target).value)"
+                   (keydown.enter)="checkDelivery()">
+            <button mat-button (click)="checkDelivery()">Check</button>
+          </div>
+          @if (deliveryMessage()) {
+            <p class="pin-msg">{{ deliveryMessage() }}</p>
+          }
+          <ul class="perks">
+            <li><mat-icon>assignment_return</mat-icon>Easy 15-day returns and exchanges</li>
+            <li><mat-icon>payments</mat-icon>Pay on delivery available</li>
+          </ul>
+        </div>
+
+        <div class="block section">
+          <h2>Product details</h2>
+          <p class="description">{{ p.description }}</p>
+          <dl>
+            <dt>Category</dt><dd>{{ p.category }}</dd>
+            <dt>Sizes</dt><dd>{{ p.sizes.join(', ') || 'One size' }}</dd>
+            <dt>Product code</dt><dd>KY-{{ p.id }}</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    @if (similar().length) {
+      <section class="similar">
+        <h2>You may also like</h2>
+        <div class="grid">
+          @for (s of similar(); track s.id) {
+            <app-product-card [product]="s" />
+          }
+        </div>
+      </section>
+    }
+  </div>
+} @else if (product() === null) {
+  <div class="container state">
+    <h1>We couldn't find this product</h1>
+    <p>It may have been removed. Browse the latest styles instead.</p>
+    <a mat-flat-button routerLink="/shop">Go to shop</a>
+  </div>
+} @else {
+  <div class="container state"><p>Loading product...</p></div>
+}

@@ -1,0 +1,102 @@
+<div class="container shop">
+
+  <div class="shop-head">
+    <div>
+      <h1>{{ title() }}</h1>
+      <p class="count">{{ results().length }} items</p>
+    </div>
+
+    <div class="head-actions">
+      <button mat-stroked-button class="filter-toggle" (click)="showFilters.set(!showFilters())">
+        <mat-icon>tune</mat-icon>
+        Filters @if (activeFilterCount()) { ({{ activeFilterCount() }}) }
+      </button>
+
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="sort">
+        <mat-label>Sort by</mat-label>
+        <mat-select [value]="sort()" (selectionChange)="sort.set($event.value)">
+          @for (s of sorts; track s.id) {
+            <mat-option [value]="s.id">{{ s.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    </div>
+  </div>
+
+  @if (loadError()) {
+    <p class="notice">We couldn't load products. Start the API in Visual Studio, then refresh this page.</p>
+  }
+
+  <div class="layout">
+
+    <!-- ===== Filters ===== -->
+    <aside class="filters" [class.open]="showFilters()" aria-label="Filters">
+      <div class="filters-head">
+        <h2>Filters</h2>
+        @if (activeFilterCount()) {
+          <button mat-button (click)="clearFilters()">Clear all</button>
+        }
+      </div>
+
+      <section>
+        <h3>Category</h3>
+        @for (c of categories(); track c) {
+          <mat-checkbox [checked]="selectedCategories().includes(c)"
+                        (change)="toggleCategory(c, $event.checked)">{{ c }}</mat-checkbox>
+        }
+      </section>
+
+      <section>
+        <h3>Price</h3>
+        <mat-radio-group class="stack" [value]="priceRange()" (change)="priceRange.set($event.value)">
+          @for (r of priceRanges; track r.id) {
+            <mat-radio-button [value]="r.id">{{ r.label }}</mat-radio-button>
+          }
+        </mat-radio-group>
+      </section>
+
+      <section>
+        <h3>Discount</h3>
+        <mat-radio-group class="stack" [value]="minDiscount()" (change)="minDiscount.set($event.value)">
+          @for (d of discounts; track d) {
+            <mat-radio-button [value]="d">{{ d === 0 ? 'Any discount' : d + '% and above' }}</mat-radio-button>
+          }
+        </mat-radio-group>
+      </section>
+
+      <section>
+        <h3>Size</h3>
+        <div class="sizes">
+          @for (s of sizes(); track s) {
+            <button type="button" class="size" [class.on]="selectedSizes().includes(s)"
+                    [attr.aria-pressed]="selectedSizes().includes(s)" (click)="toggleSize(s)">{{ s }}</button>
+          }
+        </div>
+      </section>
+    </aside>
+
+    <!-- ===== Results ===== -->
+    <section aria-live="polite">
+      @if (loading()) {
+        <div class="grid">
+          @for (n of [1, 2, 3, 4, 5, 6]; track n) {
+            <div class="skeleton"></div>
+          }
+        </div>
+      } @else if (results().length === 0) {
+        <div class="empty">
+          <h2>Nothing matches these filters</h2>
+          <p>Remove a filter or two to see more styles.</p>
+          <button mat-flat-button (click)="clearFilters()">Clear all filters</button>
+        </div>
+      } @else {
+        <div class="grid">
+          @for (p of results(); track p.id) {
+            <app-product-card [product]="p" />
+          }
+        </div>
+      }
+    </section>
+
+  </div>
+</div>

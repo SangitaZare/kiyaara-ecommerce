@@ -1,0 +1,77 @@
+<div class="page">
+
+  <!-- ===== Top bar ===== -->
+  <header class="top">
+    <div class="brand">
+      <span class="logo">Kiyaara<span class="dot">.</span></span>
+      <span class="admin-tag">ADMIN</span>
+    </div>
+    <a routerLink="/" class="shop-link"><mat-icon>open_in_new</mat-icon> Go to the shop</a>
+  </header>
+
+  <!-- ===== Sign-in card ===== -->
+  <main class="middle">
+    <form class="card" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <span class="shield"><mat-icon>admin_panel_settings</mat-icon></span>
+
+      <div>
+        <h1>Sign in to Kiyaara Admin</h1>
+        <p class="lead">For Kiyaara staff. Manage orders, products and stock.</p>
+      </div>
+
+      @if (signInEnded && !error() && !shopperEmail()) {
+        <p class="note" role="status">For safety, an admin sign-in lasts 8 hours. Please sign in again.</p>
+      }
+      @if (error()) {
+        <p class="alert" role="alert">{{ error() }}</p>
+      }
+      @if (shopperEmail()) {
+        <div class="note" role="alert">
+          <strong>{{ shopperEmail() }} is a shopper account.</strong> It can't open the admin panel.
+          <a routerLink="/">Go to the shop</a>
+        </div>
+      }
+
+      <div class="field">
+        <label for="admin-email">Work email</label>
+        <div class="input" [class.invalid]="isInvalid('email')">
+          <mat-icon>mail_outline</mat-icon>
+          <input id="admin-email" type="email" formControlName="email" autocomplete="username"
+                 placeholder="you@kiyaara.com" [attr.aria-invalid]="isInvalid('email')">
+        </div>
+        @if (isInvalid('email')) { <span class="error">Enter a valid email address.</span> }
+      </div>
+
+      <div class="field">
+        <div class="label-row">
+          <label for="admin-password">Password</label>
+          <a routerLink="/forgot-password" class="small-link">Forgot password?</a>
+        </div>
+        <div class="input with-button" [class.invalid]="isInvalid('password')">
+          <mat-icon>lock_outline</mat-icon>
+          <input id="admin-password" [type]="showPassword() ? 'text' : 'password'" formControlName="password"
+                 autocomplete="current-password" placeholder="Your password" [attr.aria-invalid]="isInvalid('password')">
+          <button type="button" class="show" (click)="showPassword.set(!showPassword())"
+                  [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'">
+            {{ showPassword() ? 'Hide' : 'Show' }}
+          </button>
+        </div>
+        @if (isInvalid('password')) { <span class="error">Enter your password.</span> }
+      </div>
+
+      <button type="submit" class="primary" [disabled]="sending()">
+        {{ sending() ? 'Signing in...' : 'Sign in' }}
+      </button>
+
+      <p class="demo">
+        Try it: <strong>admin&#64;kiyaara.com</strong> and <strong>Admin2026</strong>.
+        Or try Priya's shopper account to see the "not an admin" message.
+      </p>
+    </form>
+  </main>
+
+  <footer class="foot">
+    <span>Shopping at Kiyaara? <a routerLink="/login">Log in to the store</a></span>
+    <span>&copy; {{ year }} Kiyaara</span>
+  </footer>
+</div>

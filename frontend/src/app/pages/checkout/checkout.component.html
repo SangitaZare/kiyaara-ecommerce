@@ -1,0 +1,173 @@
+<div class="container checkout">
+  <a routerLink="/bag" class="back"><mat-icon>chevron_left</mat-icon> Back to bag</a>
+
+  @if (cart.items().length === 0 && !placing()) {
+    <div class="empty">
+      <h1>Your bag is empty</h1>
+      <p>Add something to your bag before checking out.</p>
+      <a mat-flat-button routerLink="/shop">Continue shopping</a>
+    </div>
+  } @else {
+    <form class="layout" [formGroup]="form" (ngSubmit)="placeOrder()" novalidate>
+
+      <div class="main">
+        <!-- ===== Delivery address ===== -->
+        <section class="card" aria-labelledby="address-title">
+          <h1 id="address-title">Delivery address</h1>
+          <p class="hint">We deliver across India. All fields are required unless marked optional.</p>
+
+          <div class="fields">
+            <div class="field half">
+              <label for="fullName">Full name</label>
+              <input id="fullName" formControlName="fullName" autocomplete="name" placeholder="As on your ID"
+                     [class.invalid]="isInvalid('fullName')" [attr.aria-invalid]="isInvalid('fullName')">
+              @if (isInvalid('fullName')) { <span class="error">Enter the full name (2 to 80 characters).</span> }
+            </div>
+
+            <div class="field half">
+              <label for="mobile">Mobile number</label>
+              <div class="phone" [class.invalid]="isInvalid('mobile')">
+                <span>+91</span>
+                <input id="mobile" formControlName="mobile" type="tel" inputmode="numeric" maxlength="10"
+                       autocomplete="tel-national" placeholder="10-digit number" [attr.aria-invalid]="isInvalid('mobile')">
+              </div>
+              @if (isInvalid('mobile')) { <span class="error">Enter a valid 10-digit mobile number.</span> }
+            </div>
+
+            <div class="field third">
+              <label for="pincode">Pincode</label>
+              <input id="pincode" formControlName="pincode" inputmode="numeric" maxlength="6"
+                     autocomplete="postal-code" placeholder="6 digits"
+                     [class.invalid]="isInvalid('pincode')" [attr.aria-invalid]="isInvalid('pincode')">
+              @if (isInvalid('pincode')) { <span class="error">Enter a valid 6-digit pincode.</span> }
+            </div>
+
+            <div class="field third">
+              <label for="city">City</label>
+              <input id="city" formControlName="city" autocomplete="address-level2" placeholder="e.g. Pune"
+                     [class.invalid]="isInvalid('city')" [attr.aria-invalid]="isInvalid('city')">
+              @if (isInvalid('city')) { <span class="error">Enter the city.</span> }
+            </div>
+
+            <div class="field third">
+              <label for="state">State</label>
+              <select id="state" formControlName="state" autocomplete="address-level1"
+                      [class.invalid]="isInvalid('state')" [attr.aria-invalid]="isInvalid('state')">
+                <option value="">Select state</option>
+                @for (s of states; track s) {
+                  <option [value]="s">{{ s }}</option>
+                }
+              </select>
+              @if (isInvalid('state')) { <span class="error">Choose a state.</span> }
+            </div>
+
+            <div class="field">
+              <label for="house">House number and building</label>
+              <input id="house" formControlName="house" autocomplete="address-line1" placeholder="e.g. Flat 302, Lotus Apartments"
+                     [class.invalid]="isInvalid('house')" [attr.aria-invalid]="isInvalid('house')">
+              @if (isInvalid('house')) { <span class="error">Enter the house number and building.</span> }
+            </div>
+
+            <div class="field">
+              <label for="area">Area and street</label>
+              <input id="area" formControlName="area" autocomplete="address-line2" placeholder="e.g. FC Road, Shivajinagar"
+                     [class.invalid]="isInvalid('area')" [attr.aria-invalid]="isInvalid('area')">
+              @if (isInvalid('area')) { <span class="error">Enter the area and street.</span> }
+            </div>
+
+            <div class="field">
+              <label for="landmark">Landmark <span class="optional">(optional)</span></label>
+              <input id="landmark" formControlName="landmark" placeholder="e.g. Near Balgandharva theatre">
+            </div>
+          </div>
+
+          <div class="type">
+            <div id="type-label" class="label">Address type</div>
+            <div class="chips" role="radiogroup" aria-labelledby="type-label">
+              @for (t of ['Home', 'Work']; track t) {
+                <button type="button" class="chip" role="radio"
+                        [class.on]="form.controls.addressType.value === t"
+                        [attr.aria-checked]="form.controls.addressType.value === t"
+                        (click)="setAddressType($any(t))">{{ t }}</button>
+              }
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== Payment ===== -->
+        <section class="card" aria-labelledby="pay-title">
+          <h2 id="pay-title" class="title">Payment method</h2>
+          <div class="options" role="radiogroup" aria-labelledby="pay-title">
+            <button type="button" class="option" role="radio" [class.on]="payment() === 'COD'"
+                    [attr.aria-checked]="payment() === 'COD'" (click)="payment.set('COD')">
+              <span class="radio"></span>
+              <span class="option-text">
+                <strong>Cash on delivery</strong>
+                <span>Pay with cash or UPI when the order arrives</span>
+              </span>
+              <mat-icon>payments</mat-icon>
+            </button>
+            <button type="button" class="option" role="radio" [class.on]="payment() === 'UPI'"
+                    [attr.aria-checked]="payment() === 'UPI'" (click)="payment.set('UPI')">
+              <span class="radio"></span>
+              <span class="option-text">
+                <strong>UPI (demo)</strong>
+                <span>Shows a sample UPI screen after you place the order</span>
+              </span>
+              <mat-icon>smartphone</mat-icon>
+            </button>
+          </div>
+          @if (payment() === 'UPI') {
+            <p class="demo-note">This is a demo store, so no money is taken.</p>
+          }
+        </section>
+      </div>
+
+      <!-- ===== Order summary ===== -->
+      <aside class="summary" aria-label="Order summary">
+        <h2>Order summary ({{ cart.count() }} items)</h2>
+
+        @for (item of cart.items(); track item.product.id + item.size) {
+          <div class="mini">
+            <img [src]="imageOf(item.product)" [alt]="item.product.name">
+            <div class="mini-text">
+              <div class="mini-brand">{{ item.product.brand }}</div>
+              <div class="mini-name">{{ item.product.name }}</div>
+              <div class="mini-meta">@if (item.size) {Size {{ item.size }}, }qty {{ item.quantity }}</div>
+            </div>
+            <div class="mini-price">{{ inr(item.product.price * item.quantity) }}</div>
+          </div>
+        }
+
+        <hr>
+        <div class="row"><span>Total MRP</span><span>{{ inr(cart.mrpTotal()) }}</span></div>
+        <div class="row"><span>Discount on MRP</span><span class="save">−{{ inr(cart.discount()) }}</span></div>
+        <div class="row">
+          <span>Delivery</span>
+          @if (cart.deliveryFee() === 0) {
+            <span class="save">Free</span>
+          } @else {
+            <span>{{ inr(cart.deliveryFee()) }}</span>
+          }
+        </div>
+        <hr>
+        <div class="row total"><span>Total amount</span><span>{{ inr(cart.total()) }}</span></div>
+
+        @if (serverErrors().length) {
+          <div class="alert" role="alert">
+            <strong>We couldn't place your order</strong>
+            <ul>
+              @for (e of serverErrors(); track e) { <li>{{ e }}</li> }
+            </ul>
+          </div>
+        }
+
+        <button mat-flat-button type="submit" class="cta" [disabled]="placing()">
+          {{ placing() ? 'Placing order...' : 'Place order' }}
+        </button>
+        <p class="note">Demo store. No real order or payment is made.</p>
+      </aside>
+
+    </form>
+  }
+</div>

@@ -1,0 +1,16 @@
+@if (!fullPage()) {
+  @if (checkoutStep()) {
+    <app-checkout-header [step]="checkoutStep()" />
+  } @else {
+    <app-header />
+  }
+}
+
+<!-- One outlet for every page, so switching between store, login and admin never rebuilds it -->
+<main [class.app-main]="!fullPage()">
+  <router-outlet />
+</main>
+
+@if (!fullPage() && !checkoutStep()) {
+  <app-footer />
+}

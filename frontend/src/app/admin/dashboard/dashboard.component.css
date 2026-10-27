@@ -1,0 +1,47 @@
+/* NEW (4C): replaces the old "Demo admin" chip */
+.who-chip {
+  display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px;
+  background: #e4f0ee; color: var(--k-peacock); font-size: 0.8125rem; font-weight: 700;
+}
+.who-chip .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--k-peacock); }
+
+/* ===== Four numbers ===== */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+.stat { padding: 18px 20px; display: flex; flex-direction: column; gap: 6px; transition: border-color 0.15s; }
+.stat:hover { border-color: #b9c9c9; }
+.stat-label { font-size: 0.8125rem; font-weight: 600; color: var(--k-muted); }
+.stat-value { font-size: 1.875rem; font-weight: 700; line-height: 1.1; }
+.stat-value.ink { color: var(--k-ink); }
+.stat-value.packed { color: #8a5a12; }
+.stat-value.shipped { color: var(--k-peacock); }
+.stat-value.alert { color: #b3261e; }
+.stat-note { font-size: 0.8125rem; color: var(--k-muted); }
+
+/* ===== Recent orders + right column ===== */
+.split { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 24px; }
+.recent { flex: 999 1 520px; min-width: 0; overflow: hidden; }
+.panel-head { padding: 18px 20px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.empty { text-align: center; color: var(--k-muted); padding: 32px 20px; }
+.side-col { flex: 1 1 300px; min-width: 0; display: flex; flex-direction: column; gap: 24px; }
+.box { padding: 20px; }
+.box-sub { margin: 4px 0 14px; font-size: 0.8125rem; color: var(--k-muted); }
+
+/* ===== Stock health ===== */
+.bar { height: 12px; border-radius: 6px; overflow: hidden; display: flex; gap: 3px; background: var(--k-line); }
+.ok { background: #2e7d5b; }
+.low { background: #c77700; }
+.out { background: #b3261e; }
+.legend { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 0.8125rem; color: var(--k-muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 8px; height: 8px; border-radius: 50%; }
+
+/* ===== Needs attention ===== */
+.attention { margin-top: 12px; display: flex; flex-direction: column; gap: 12px; }
+.att-row { display: flex; align-items: center; gap: 12px; }
+.att-row img { flex: none; width: 40px; height: 52px; border-radius: 4px; object-fit: cover; background: var(--k-mist); }
+.att-text { flex: 1; min-width: 0; }
+.att-name { font-size: 0.875rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.att-state { font-size: 0.8125rem; font-weight: 600; }
+.att-state.is-out { color: #b3261e; }
+.att-state.is-low { color: var(--k-sale); }
+.att-row .text-link { min-height: 44px; display: flex; align-items: center; }

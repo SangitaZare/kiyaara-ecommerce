@@ -1,0 +1,79 @@
+.detail { padding-top: 20px; padding-bottom: 56px; }
+
+.crumbs { margin-bottom: 16px; font-size: 0.8125rem; color: var(--k-muted); }
+.crumbs a:hover { color: var(--k-peacock); }
+
+.detail-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 48px; align-items: start; }
+
+.gallery { position: sticky; top: 124px; aspect-ratio: 3 / 4; background: var(--k-mist); }
+.gallery img { width: 100%; height: 100%; object-fit: cover; }
+
+.brand { margin: 0; font-family: var(--k-display); font-weight: 400; font-size: 2rem; }
+.name { margin: 4px 0 12px; font-size: 1.125rem; color: var(--k-muted); }
+
+.rating { display: flex; align-items: center; gap: 10px; margin: 0 0 16px; font-size: 0.875rem; color: var(--k-muted); }
+.stars {
+  display: inline-flex; align-items: center; gap: 2px; padding: 2px 8px;
+  border: 1px solid var(--k-line); border-radius: 3px; font-weight: 700; color: var(--k-ink);
+}
+.stars mat-icon { font-size: 16px; width: 16px; height: 16px; color: var(--k-marigold); }
+
+.price-block {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px;
+  padding-top: 16px; border-top: 1px solid var(--k-line);
+}
+.now { font-size: 1.5rem; font-weight: 700; }
+.mrp { color: var(--k-muted); text-decoration: line-through; }
+.off { font-weight: 700; color: var(--k-sale); }
+.tax { flex-basis: 100%; margin: 0; font-size: 0.8125rem; color: #2e7d5b; }
+
+.block { margin-top: 24px; }
+.block-head { display: flex; align-items: baseline; gap: 12px; }
+h2 { margin: 0 0 12px; font-size: 0.9375rem; font-weight: 700; }
+.error { font-size: 0.8125rem; font-weight: 600; color: #b3261e; }
+
+.sizes { display: flex; flex-wrap: wrap; gap: 10px; }
+.size {
+  min-width: 52px; height: 52px; padding: 0 12px; cursor: pointer;
+  border: 1px solid #c9d2d2; border-radius: 26px; background: #fff;
+  font: inherit; font-weight: 600;
+}
+.size:hover { border-color: var(--k-peacock); }
+.size.on { background: var(--k-peacock); border-color: var(--k-peacock); color: #fff; }
+
+.stock { margin: 16px 0 0; font-size: 0.875rem; font-weight: 600; }
+.stock.low { color: var(--k-sale); }
+.stock.out { color: #b3261e; }
+
+.bag-btn { margin-top: 24px; height: 52px; padding: 0 40px; font-size: 1rem; }
+
+.section { margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--k-line); }
+
+.pin-row {
+  display: flex; align-items: center; gap: 8px; max-width: 320px;
+  padding: 4px 4px 4px 12px; border: 1px solid #c9d2d2; border-radius: 4px;
+}
+.pin-row input { flex: 1; min-width: 0; border: 0; font: inherit; outline: none; }
+.pin-msg { margin: 8px 0 0; font-size: 0.875rem; }
+
+.perks { display: grid; gap: 8px; margin: 16px 0 0; padding: 0; list-style: none; font-size: 0.875rem; }
+.perks li { display: flex; align-items: center; gap: 8px; }
+.perks mat-icon { font-size: 20px; width: 20px; height: 20px; color: var(--k-peacock); }
+
+.description { max-width: 60ch; line-height: 1.6; }
+dl { display: grid; grid-template-columns: 140px 1fr; gap: 8px; margin: 16px 0 0; font-size: 0.875rem; }
+dt { color: var(--k-muted); }
+dd { margin: 0; }
+
+.similar { margin-top: 56px; }
+.similar h2 { margin-bottom: 20px; font-family: var(--k-display); font-weight: 400; font-size: 1.75rem; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 32px 20px; }
+
+.state { padding-top: 80px; padding-bottom: 80px; text-align: center; }
+.state h1 { font-family: var(--k-display); font-weight: 400; }
+
+@media (max-width: 860px) {
+  .detail-grid { grid-template-columns: 1fr; gap: 24px; }
+  .gallery { position: static; }
+  .bag-btn { width: 100%; }
+}

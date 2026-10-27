@@ -1,0 +1,99 @@
+<div class="container page">
+
+  <!-- ===== Left: who is logged in ===== -->
+  <aside class="profile" aria-label="Your account">
+    <div class="who">
+      <span class="avatar">{{ auth.initial() }}</span>
+      <div class="who-text">
+        <div class="name">{{ auth.customer()?.fullName }}</div>
+        <div class="small">{{ auth.customer()?.email }}</div>
+      </div>
+    </div>
+    <nav aria-label="Account">
+      <a routerLink="/account/orders"><mat-icon>receipt_long</mat-icon> My orders</a>
+      <a routerLink="/account/profile" class="current" aria-current="page"><mat-icon>person_outline</mat-icon> My account</a>
+      <a routerLink="/wishlist"><mat-icon>favorite_border</mat-icon> Wishlist</a>
+      <button type="button" class="logout" (click)="auth.logout()"><mat-icon>logout</mat-icon> Log out</button>
+    </nav>
+  </aside>
+
+  <!-- ===== Right: the forms ===== -->
+  <section class="content">
+    <h1>My account</h1>
+
+    <!-- Details -->
+    <form class="card" [formGroup]="profileForm" (ngSubmit)="saveProfile()" novalidate>
+      <h2>Your details</h2>
+
+      <div class="field">
+        <label for="email">Email</label>
+        <input id="email" class="readonly" [value]="auth.customer()?.email" readonly>
+        <span class="hint">Your email is your login, so it can't be changed here.</span>
+      </div>
+
+      <div class="field">
+        <label for="fullName">Full name</label>
+        <input id="fullName" formControlName="fullName" autocomplete="name"
+               [class.invalid]="isInvalid(profileForm.controls.fullName)">
+        @if (isInvalid(profileForm.controls.fullName)) {
+          <span class="error">Enter your name (2 to 80 characters).</span>
+        }
+      </div>
+
+      <div class="field">
+        <label for="mobile">Mobile number</label>
+        <input id="mobile" formControlName="mobile" inputmode="numeric" maxlength="10" autocomplete="tel"
+               [class.invalid]="isInvalid(profileForm.controls.mobile)">
+        @if (isInvalid(profileForm.controls.mobile)) {
+          <span class="error">Enter a valid 10-digit mobile number.</span>
+        }
+      </div>
+
+      <div class="row">
+        <button type="submit" class="save" [disabled]="savingProfile()">
+          {{ savingProfile() ? 'Saving...' : 'Save details' }}
+        </button>
+        @if (profileMessage(); as m) {
+          <span class="msg" [class.ok]="m.ok" [class.bad]="!m.ok" role="status">{{ m.text }}</span>
+        }
+      </div>
+    </form>
+
+    <!-- Password -->
+    <form class="card" [formGroup]="passwordForm" (ngSubmit)="changePassword()" novalidate>
+      <h2>Change password</h2>
+
+      <div class="field">
+        <label for="currentPassword">Current password</label>
+        <input id="currentPassword" [type]="showPasswords() ? 'text' : 'password'" formControlName="currentPassword"
+               autocomplete="current-password" [class.invalid]="isInvalid(passwordForm.controls.currentPassword)">
+        @if (isInvalid(passwordForm.controls.currentPassword)) {
+          <span class="error">Enter your current password.</span>
+        }
+      </div>
+
+      <div class="field">
+        <label for="newPassword">New password</label>
+        <input id="newPassword" [type]="showPasswords() ? 'text' : 'password'" formControlName="newPassword"
+               autocomplete="new-password" [class.invalid]="isInvalid(passwordForm.controls.newPassword)">
+        <span class="hint">At least 8 characters, with a letter and a number.</span>
+        @if (isInvalid(passwordForm.controls.newPassword)) {
+          <span class="error">Use at least 8 characters, with a letter and a number.</span>
+        }
+      </div>
+
+      <button type="button" class="toggle" (click)="showPasswords.set(!showPasswords())">
+        {{ showPasswords() ? 'Hide passwords' : 'Show passwords' }}
+      </button>
+
+      <div class="row">
+        <button type="submit" class="save" [disabled]="savingPassword()">
+          {{ savingPassword() ? 'Changing...' : 'Change password' }}
+        </button>
+        @if (passwordMessage(); as m) {
+          <span class="msg" [class.ok]="m.ok" [class.bad]="!m.ok" role="status">{{ m.text }}</span>
+        }
+      </div>
+    </form>
+  </section>
+</div>

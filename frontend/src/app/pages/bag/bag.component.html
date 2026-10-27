@@ -1,0 +1,99 @@
+<div class="container bag">
+
+  @if (cart.items().length === 0) {
+    <!-- ===== Empty bag ===== -->
+    <div class="empty">
+      <div class="empty-icon"><mat-icon>shopping_bag</mat-icon></div>
+      <h1>Your bag is empty</h1>
+      <p>Add a few styles you love and they will wait for you here.</p>
+      <a mat-flat-button routerLink="/shop">Continue shopping</a>
+    </div>
+  } @else {
+    <div class="layout">
+
+      <!-- ===== Items ===== -->
+      <section class="items" aria-label="Items in your bag">
+        @if (cart.freeDelivery()) {
+          <div class="banner ok">
+            <mat-icon>local_shipping</mat-icon>
+            <span>Free delivery unlocked on this order</span>
+          </div>
+        } @else {
+          <div class="banner">
+            <span>Add {{ inr(cart.amountForFreeDelivery()) }} more for free delivery</span>
+            <div class="track"><div class="fill" [style.width.%]="progress()"></div></div>
+          </div>
+        }
+
+        <h1>My bag <span class="count">{{ cart.count() }} items</span></h1>
+
+        @for (item of cart.items(); track item.product.id + item.size) {
+          <article class="item">
+            <a class="thumb" [routerLink]="['/product', item.product.id]">
+              <img [src]="imageOf(item.product)" [alt]="item.product.brand + ' ' + item.product.name">
+            </a>
+
+            <div class="details">
+              <div class="brand">{{ item.product.brand }}</div>
+              <a class="name" [routerLink]="['/product', item.product.id]">{{ item.product.name }}</a>
+
+              <div class="controls">
+                @if (item.size) {
+                  <span class="size">Size: {{ item.size }}</span>
+                }
+                <div class="qty" role="group" [attr.aria-label]="'Quantity of ' + item.product.name">
+                  <button type="button" aria-label="Decrease quantity"
+                          [disabled]="item.quantity <= 1" (click)="cart.changeQuantity(item, -1)">
+                    <mat-icon>remove</mat-icon>
+                  </button>
+                  <span aria-live="polite">{{ item.quantity }}</span>
+                  <button type="button" aria-label="Increase quantity"
+                          [disabled]="item.quantity >= cart.maxQuantity(item)" (click)="cart.changeQuantity(item, 1)">
+                    <mat-icon>add</mat-icon>
+                  </button>
+                </div>
+              </div>
+
+              <div class="price">
+                <span class="now">{{ inr(item.product.price * item.quantity) }}</span>
+                @if (discountPercent(item.product) > 0) {
+                  <span class="mrp">{{ inr(item.product.mrp * item.quantity) }}</span>
+                  <span class="off">{{ discountPercent(item.product) }}% off</span>
+                }
+              </div>
+              <div class="eta">Delivery by {{ deliveryBy }}</div>
+            </div>
+
+            <button type="button" class="remove" [attr.aria-label]="'Remove ' + item.product.name"
+                    (click)="cart.remove(item)">
+              <mat-icon>close</mat-icon>
+            </button>
+          </article>
+        }
+      </section>
+
+      <!-- ===== Price details ===== -->
+      <aside class="summary" aria-label="Price details">
+        <h2>Price details ({{ cart.count() }} items)</h2>
+        <div class="row"><span>Total MRP</span><span>{{ inr(cart.mrpTotal()) }}</span></div>
+        <div class="row"><span>Discount on MRP</span><span class="save">−{{ inr(cart.discount()) }}</span></div>
+        <div class="row">
+          <span>Delivery</span>
+          @if (cart.deliveryFee() === 0) {
+            <span class="save">Free</span>
+          } @else {
+            <span>{{ inr(cart.deliveryFee()) }}</span>
+          }
+        </div>
+        <hr>
+        <div class="row total"><span>Total amount</span><span>{{ inr(cart.total()) }}</span></div>
+        @if (cart.discount() > 0) {
+          <div class="saved">You save {{ inr(cart.discount()) }} on this order</div>
+        }
+        <a mat-flat-button class="cta" routerLink="/checkout">Continue to checkout</a>
+        <p class="note">Easy 15-day returns. Pay on delivery available.</p>
+      </aside>
+
+    </div>
+  }
+</div>

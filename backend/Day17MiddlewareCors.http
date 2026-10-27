@@ -1,0 +1,157 @@
+@baseUrl = https://localhost:7001
+
+### 1. GET all products from the Angular origin (allowed)
+GET {{baseUrl}}/api/products
+Origin: http://localhost:4200
+
+### 2. GET one product (no Origin = not a cross-origin request)
+GET {{baseUrl}}/api/products/1
+
+### 3. Preflight from an ALLOWED origin
+OPTIONS {{baseUrl}}/api/products
+Origin: http://localhost:4200
+Access-Control-Request-Method: POST
+Access-Control-Request-Headers: content-type
+
+### 4. Preflight from a BLOCKED origin
+OPTIONS {{baseUrl}}/api/products
+Origin: http://evil-site.com
+Access-Control-Request-Method: POST
+Access-Control-Request-Headers: content-type
+
+### 5. POST a new product
+POST {{baseUrl}}/api/products
+Origin: http://localhost:4200
+Content-Type: application/json
+
+{
+  "name": "Monitor",
+  "category": "Electronics",
+  "price": 9500,
+  "stock": 20
+}
+
+### 6. Short-circuit middleware (expect 403)
+GET {{baseUrl}}/api/admin
+
+### 7. Endpoint with [DisableCors] (200, but no Access-Control-Allow-Origin)
+GET {{baseUrl}}/api/products/internal
+Origin: http://localhost:4200
+
+### 8. PUT - update product 2
+PUT {{baseUrl}}/api/products/2
+Origin: http://localhost:4200
+Content-Type: application/json
+
+{
+  "name": "Wireless Mouse",
+  "category": "Accessories",
+  "price": 799,
+  "stock": 80
+}
+
+### 9. DELETE - remove product 3
+DELETE {{baseUrl}}/api/products/3
+Origin: http://localhost:4200
+
+### 10. Validation error (expect 400 with an errors list)
+POST {{baseUrl}}/api/products
+Content-Type: application/json
+
+{
+  "name": "",
+  "price": 0
+}
+### 11. Place an order (expect 201 with "orderNumber": "KY-1001")
+POST {{baseUrl}}/api/orders
+Origin: http://localhost:4200
+Content-Type: application/json
+
+{
+  "items": [
+    { "productId": 1, "size": "M", "quantity": 1 },
+    { "productId": 4, "size": "S", "quantity": 2 }
+  ],
+  "address": {
+    "fullName": "Test Customer",
+    "mobile": "9876543210",
+    "pincode": "411005",
+    "city": "Pune",
+    "state": "Maharashtra",
+    "house": "Flat 302, Lotus Apartments",
+    "area": "FC Road, Shivajinagar",
+    "landmark": "",
+    "addressType": "Home"
+  },
+  "paymentMethod": "COD"
+}
+
+### 12. Read the order back, then check the kurta set's stock went from 25 to 24
+GET {{baseUrl}}/api/orders/1001
+
+### 13. Sold-out product (expect 400: the chinos have no stock)
+POST {{baseUrl}}/api/orders
+Content-Type: application/json
+
+{
+  "items": [ { "productId": 9, "size": "32", "quantity": 1 } ],
+  "address": {
+    "fullName": "Test Customer", "mobile": "9876543210", "pincode": "411005",
+    "city": "Pune", "state": "Maharashtra", "house": "Flat 302", "area": "FC Road",
+    "addressType": "Home"
+  },
+  "paymentMethod": "COD"
+}
+
+### 14. Bad address (expect 400 with mobile and pincode messages)
+POST {{baseUrl}}/api/orders
+Content-Type: application/json
+
+{
+  "items": [ { "productId": 4, "size": "M", "quantity": 1 } ],
+  "address": {
+    "fullName": "Test Customer", "mobile": "12345", "pincode": "0000",
+    "city": "Pune", "state": "Maharashtra", "house": "Flat 302", "area": "FC Road",
+    "addressType": "Home"
+  },
+  "paymentMethod": "COD"
+}
+### 15. Dashboard numbers (expect ordersToday 3, waitingToPack 2, onTheWay 2, soldOut 1)
+GET {{baseUrl}}/api/dashboard/summary
+
+### 16. All orders, newest first (KY-1006 at the top)
+GET {{baseUrl}}/api/orders
+
+### 17. Pack order 1006 (expect 200 with "status": "Packed" and a second History entry)
+PUT {{baseUrl}}/api/orders/1006/status
+Origin: http://localhost:4200
+Content-Type: application/json
+
+{ "status": "Packed" }
+
+### 18. Cancel order 1005 (expect 200; the linen shirt's stock goes from 30 to 31)
+PUT {{baseUrl}}/api/orders/1005/status
+Content-Type: application/json
+
+{ "status": "Cancelled" }
+
+### 19. Change a delivered order (expect 400: "This order is delivered...")
+PUT {{baseUrl}}/api/orders/1001/status
+Content-Type: application/json
+
+{ "status": "Placed" }
+
+### 20. Cancel a shipped order (expect 400: "A shipped order can't be cancelled.")
+PUT {{baseUrl}}/api/orders/1003/status
+Content-Type: application/json
+
+{ "status": "Cancelled" }
+
+### 21. Unknown status (expect 400: the JSON value could not be converted)
+PUT {{baseUrl}}/api/orders/1004/status
+Content-Type: application/json
+
+{ "status": "Lost" }
+
+### 22. The old blocked path still says no (expect 403 from the Day 17 middleware)
+GET {{baseUrl}}/api/admin/summary

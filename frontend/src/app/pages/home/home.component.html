@@ -1,0 +1,84 @@
+<!-- ===== Hero: the one bold element ===== -->
+<section class="hero">
+  <div class="container hero-grid">
+    <div>
+      <h1>Colour, craft and comfort for every celebration</h1>
+      <p class="lead">Block prints, silk blends and easy cottons from Indian labels, at up to 50% off this week.</p>
+      <div class="cta">
+        <a mat-flat-button routerLink="/shop/women">Shop women</a>
+        <a mat-stroked-button routerLink="/shop/men">Shop men</a>
+      </div>
+    </div>
+
+    <div class="collage">
+      @for (p of heroProducts(); track p.id; let i = $index) {
+        <a [class]="'tile t' + i" [routerLink]="['/product', p.id]">
+          <img [src]="imageOf(p)" [alt]="p.brand + ' ' + p.name">
+        </a>
+      }
+    </div>
+  </div>
+</section>
+
+@if (loadError()) {
+  <div class="container">
+    <p class="notice">We couldn't load products. Start the API in Visual Studio, then refresh this page.</p>
+  </div>
+}
+
+<!-- ===== Categories ===== -->
+<section class="container section">
+  <h2>Shop by category</h2>
+  <div class="cats">
+    @for (c of categoryTiles(); track c.category) {
+      <a class="cat" [routerLink]="['/shop', c.gender.toLowerCase()]" [queryParams]="{ category: c.category }">
+        <img [src]="imageOf(c)" [alt]="c.category" loading="lazy">
+        <span>{{ c.category }}</span>
+      </a>
+    }
+  </div>
+</section>
+
+<!-- ===== New arrivals ===== -->
+<section class="container section">
+  <div class="section-head">
+    <h2>New arrivals</h2>
+    <a routerLink="/shop" [queryParams]="{ sort: 'new' }">View all</a>
+  </div>
+  <div class="grid">
+    @for (p of newArrivals(); track p.id) {
+      <app-product-card [product]="p" />
+    }
+  </div>
+</section>
+
+<!-- ===== Under 999 ===== -->
+<section class="band">
+  <div class="container section">
+    <div class="section-head">
+      <h2>Steals under &#8377;999</h2>
+      <a routerLink="/shop">Shop all</a>
+    </div>
+    <div class="grid">
+      @for (p of steals(); track p.id) {
+        <app-product-card [product]="p" />
+      }
+    </div>
+  </div>
+</section>
+
+<!-- ===== Store promises ===== -->
+<section class="container perks">
+  <div class="perk">
+    <mat-icon>local_shipping</mat-icon>
+    <div><strong>Free delivery</strong><span>On orders above &#8377;999</span></div>
+  </div>
+  <div class="perk">
+    <mat-icon>assignment_return</mat-icon>
+    <div><strong>Easy returns</strong><span>Return or exchange within 15 days</span></div>
+  </div>
+  <div class="perk">
+    <mat-icon>payments</mat-icon>
+    <div><strong>Pay on delivery</strong><span>Cash or UPI when your order arrives</span></div>
+  </div>
+</section>

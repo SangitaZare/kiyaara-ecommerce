@@ -1,0 +1,53 @@
+<div class="shell">
+
+  <!-- ===== Sidebar ===== -->
+  <aside class="side">
+    <a class="brand" routerLink="/admin">
+      <span class="logo">Kiyaara<span class="dot">.</span></span>
+      <span class="tag">Admin</span>
+    </a>
+
+    <nav aria-label="Admin">
+      <a routerLink="/admin" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"
+         ariaCurrentWhenActive="page">
+        <mat-icon>dashboard</mat-icon>
+        <span class="grow">Dashboard</span>
+      </a>
+      <a routerLink="/admin/orders" routerLinkActive="active" ariaCurrentWhenActive="page">
+        <mat-icon>receipt_long</mat-icon>
+        <span class="grow">Orders</span>
+        @if (waiting()) {
+          <span class="badge">{{ waiting() }}<span class="sr-only"> waiting to pack</span></span>
+        }
+      </a>
+      <a routerLink="/admin/products" routerLinkActive="active" ariaCurrentWhenActive="page">
+        <mat-icon>sell</mat-icon>
+        <span class="grow">Products</span>
+      </a>
+    </nav>
+
+    <!-- NEW (4C): who is signed in, View store and Sign out -->
+    <div class="account">
+      <div class="who">
+        <span class="avatar">{{ auth.initial() }}</span>
+        <div class="who-text">
+          <div class="who-name">{{ auth.customer()?.fullName }}</div>
+          <div class="who-email">{{ auth.customer()?.email }}</div>
+        </div>
+      </div>
+      <a class="side-link" routerLink="/">
+        <mat-icon>open_in_new</mat-icon>
+        <span>View store</span>
+      </a>
+      <button type="button" class="side-link sign-out" (click)="signOut()">
+        <mat-icon>logout</mat-icon>
+        <span>Sign out</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ===== The admin page (dashboard, orders, order detail or products) ===== -->
+  <div class="content">
+    <router-outlet />
+  </div>
+</div>

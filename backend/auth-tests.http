@@ -1,0 +1,129 @@
+# For more info on HTTP files go to https://aka.ms/vs/httpfile
+@api = https://localhost:7001/api
+
+### 1. Log in as the demo customer. The next requests reuse this token automatically.
+# @name login
+POST {{api}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "priya@example.com",
+  "password": "Kiyaara123"
+}
+
+### 2. Who am I? (sends the token)
+GET {{api}}/auth/me
+Authorization: Bearer {{login.response.body.$.token}}
+
+### 3. Priya's own orders (KY-1003 is hers)
+GET {{api}}/orders/mine
+Authorization: Bearer {{login.response.body.$.token}}
+
+### 4. The same without a token: 401 Unauthorized
+GET {{api}}/orders/mine
+
+### 5. Wrong password: 401 Unauthorized
+POST {{api}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "priya@example.com",
+  "password": "wrongpass1"
+}
+
+### 6. Create a new account (the second time: 400, email already exists)
+POST {{api}}/auth/register
+Content-Type: application/json
+
+{
+  "fullName": "Meera Joshi",
+  "email": "meera@example.com",
+  "mobile": "9876543210",
+  "password": "Kiyaara2026"
+}
+
+### 7. Weak password: 400 with the password rule
+POST {{api}}/auth/register
+Content-Type: application/json
+
+{
+  "fullName": "Test User",
+  "email": "test@example.com",
+  "mobile": "9876543211",
+  "password": "short"
+}
+
+### 8. Place an order as Priya (201 Created, and it appears in request 3)
+POST {{api}}/orders
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.token}}
+
+{
+  "items": [ { "productId": 11, "size": "Free Size", "quantity": 1 } ],
+  "address": {
+    "fullName": "Priya Nair", "mobile": "9847012345", "pincode": "682011",
+    "city": "Kochi", "state": "Kerala", "house": "14/2 Marine Drive Road",
+    "area": "Ernakulam", "landmark": "", "addressType": "Home"
+  },
+  "paymentMethod": "COD"
+}
+
+### 9. Forgot password: look in the API console window for the reset link
+POST {{api}}/auth/forgot-password
+Content-Type: application/json
+
+{
+  "email": "priya@example.com"
+}
+
+  @api = https://localhost:7001/api
+
+### 1. The demo admin signs in (Asha). Requests below reuse this token.
+# @name admin
+POST {{api}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@kiyaara.com",
+  "password": "Admin2026"
+}
+
+### 2. Priya signs in (a shopper)
+# @name shopper
+POST {{api}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "priya@example.com",
+  "password": "Kiyaara123"
+}
+
+### 3. Every order, as the admin: 200 OK
+GET {{api}}/orders
+Authorization: Bearer {{admin.response.body.$.token}}
+
+### 4. Every order, as Priya: 403 Forbidden (logged in, but not an admin)
+GET {{api}}/orders
+Authorization: Bearer {{shopper.response.body.$.token}}
+
+### 5. Every order, with no token: 401 Unauthorized (not logged in)
+GET {{api}}/orders
+
+### 6. Dashboard, as the admin: 200 OK
+GET {{api}}/dashboard/summary
+Authorization: Bearer {{admin.response.body.$.token}}
+
+### 7. Priya opens her own order KY-1003: 200 OK
+GET {{api}}/orders/1003
+Authorization: Bearer {{shopper.response.body.$.token}}
+
+### 8. Priya opens someone else's order KY-1001: 404 Not Found
+GET {{api}}/orders/1001
+Authorization: Bearer {{shopper.response.body.$.token}}
+
+### 9. The product list is still open to everyone: 200 OK
+GET {{api}}/products
+
+### 10. Priya tries to delete a product: 403 Forbidden (nothing is deleted)
+DELETE {{api}}/products/12
+Authorization: Bearer {{shopper.response.body.$.token}}

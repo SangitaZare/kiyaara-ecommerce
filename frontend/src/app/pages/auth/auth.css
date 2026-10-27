@@ -1,0 +1,130 @@
+/* Shared by the log in, create account, forgot and reset password pages.
+   Each page: the form on one side, the brand panel (app-auth-panel) on the other. */
+
+:host { display: block; }
+
+.auth { min-height: 100vh; display: flex; flex-wrap: wrap; background: #fff; color: var(--k-ink); }
+
+/* ===== Form side ===== */
+.form-side {
+  flex: 1 1 520px; min-width: 0; box-sizing: border-box; padding: 32px 56px 28px;
+  display: flex; flex-direction: column; gap: 32px;
+}
+
+.top { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.logo { font-family: var(--k-display); font-size: 1.875rem; color: var(--k-peacock); letter-spacing: 0.02em; }
+.logo .dot { color: var(--k-marigold); }
+.back {
+  min-height: 44px; display: inline-flex; align-items: center; gap: 2px;
+  color: var(--k-peacock); font-size: 0.875rem; font-weight: 700;
+}
+.back:hover { text-decoration: underline; }
+
+.middle { flex: 1; display: flex; align-items: center; }
+.box { width: 100%; max-width: 420px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+
+h1 { margin: 0; font-family: var(--k-display); font-weight: 400; font-size: 2.25rem; line-height: 1.15; }
+.lead { margin: 8px 0 0; font-size: 0.9375rem; line-height: 1.5; color: var(--k-muted); }
+
+/* ===== Messages ===== */
+.note, .alert, .done-box, .hint-box {
+  margin: 0; padding: 12px 14px; border-radius: 10px;
+  font-size: 0.875rem; line-height: 1.5;
+}
+.note { background: #fdf3e2; display: flex; align-items: flex-start; gap: 10px; }
+.note mat-icon { flex: none; color: #9a6206; font-size: 20px; width: 20px; height: 20px; }
+.alert { background: #fdecee; color: #8c1d18; font-weight: 600; }
+.alert ul { margin: 4px 0 0; padding-left: 18px; font-weight: 500; }
+.hint-box { background: var(--k-mist); color: var(--k-muted); }
+
+/* ===== Fields ===== */
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field label { font-size: 0.875rem; font-weight: 600; }
+.label-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.small-link { font-size: 0.8125rem; font-weight: 700; color: var(--k-peacock); }
+.small-link:hover { text-decoration: underline; }
+
+.input {
+  height: 48px; box-sizing: border-box; padding: 0 14px; border: 1px solid #c9d2d2; border-radius: 10px;
+  background: #fff; display: flex; align-items: center; gap: 10px; color: var(--k-muted);
+}
+.input:focus-within { border-color: var(--k-peacock); box-shadow: 0 0 0 3px rgba(11, 93, 94, 0.12); }
+.input.invalid { border-color: #b3261e; }
+.input mat-icon { flex: none; font-size: 20px; width: 20px; height: 20px; }
+.input input {
+  flex: 1; min-width: 0; height: 100%; border: 0; outline: none; background: transparent;
+  font: inherit; font-size: 0.9375rem; color: var(--k-ink);
+}
+.input.with-button { padding-right: 6px; }
+
+/* +91 in front of the mobile number */
+.input.phone { padding-left: 0; overflow: hidden; }
+.input.phone .code {
+  height: 100%; padding: 0 14px; display: flex; align-items: center;
+  background: var(--k-mist); border-right: 1px solid var(--k-line); font-weight: 600;
+}
+
+.show {
+  min-width: 60px; height: 36px; border: 0; border-radius: 8px; cursor: pointer;
+  background: var(--k-mist); color: var(--k-peacock); font: inherit; font-size: 0.8125rem; font-weight: 700;
+}
+.error { font-size: 0.8125rem; color: #b3261e; }
+.help { font-size: 0.8125rem; color: var(--k-muted); }
+
+/* Password rules: grey, then green when met, red if you tried to submit without them */
+.rules { margin: 4px 0 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 0.8125rem; }
+.rules li { display: flex; align-items: center; gap: 6px; font-weight: 600; color: var(--k-muted); }
+.rules .tick {
+  width: 16px; height: 16px; border-radius: 50%; background: #c9d2d2; color: #fff;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.rules .tick mat-icon { font-size: 12px; width: 12px; height: 12px; }
+.rules li.ok { color: #2e7d5b; }
+.rules li.ok .tick { background: #2e7d5b; }
+.rules li.bad { color: #b3261e; }
+
+/* ===== Buttons ===== */
+.primary, .ghost {
+  height: 50px; border-radius: 10px; cursor: pointer; font: inherit; font-weight: 700;
+  display: inline-flex; align-items: center; justify-content: center; text-align: center;
+}
+.primary { border: 0; background: var(--k-peacock); color: #fff; font-size: 1rem; }
+.primary:hover:not(:disabled) { background: #084546; }
+.primary:disabled { opacity: 0.65; cursor: wait; }
+.ghost { border: 1px solid #c9d2d2; background: #fff; color: var(--k-ink); font-size: 0.9375rem; }
+.ghost:hover { background: var(--k-mist); }
+
+.divider { display: flex; align-items: center; gap: 12px; font-size: 0.8125rem; color: var(--k-muted); }
+.divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--k-line); }
+
+.switch { margin: 4px 0 0; font-size: 0.9375rem; color: var(--k-muted); text-align: center; }
+.switch a { font-weight: 700; color: var(--k-peacock); }
+.switch a:hover { text-decoration: underline; }
+.switch.ruled { padding-top: 16px; border-top: 1px solid var(--k-line); }
+
+.terms { margin: 0; font-size: 0.8125rem; line-height: 1.5; color: var(--k-muted); text-align: center; }
+.terms a { color: var(--k-peacock); font-weight: 600; }
+
+.demo {
+  margin: 0; padding: 10px 12px; border-radius: 8px; background: var(--k-mist);
+  font-size: 0.8125rem; line-height: 1.5; color: var(--k-muted);
+}
+.demo strong { color: var(--k-ink); }
+
+/* Success panels (password changed, link sent) */
+.done-icon {
+  width: 56px; height: 56px; border-radius: 50%; background: #e4f0ee; color: var(--k-peacock);
+  display: flex; align-items: center; justify-content: center;
+}
+.done-icon mat-icon { font-size: 30px; width: 30px; height: 30px; }
+
+/* ===== Footer line ===== */
+.foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 16px; font-size: 0.8125rem; color: var(--k-muted); }
+.foot nav { display: flex; gap: 16px; }
+.foot a:hover { color: var(--k-peacock); }
+
+/* ===== Phones ===== */
+@media (max-width: 760px) {
+  .form-side { padding: 20px 20px 24px; gap: 24px; }
+  h1 { font-size: 1.875rem; }
+}

@@ -1,0 +1,89 @@
+<div class="container page">
+
+  <!-- ===== Left: who is logged in ===== -->
+  <aside class="profile" aria-label="Your account">
+    <div class="who">
+      <span class="avatar">{{ auth.initial() }}</span>
+      <div class="who-text">
+        <div class="name">{{ auth.customer()?.fullName }}</div>
+        <div class="small">{{ auth.customer()?.email }}</div>
+        <div class="small">{{ mobile() }}</div>
+      </div>
+    </div>
+    <nav aria-label="Account">
+      <a routerLink="/account/orders" class="current" aria-current="page"><mat-icon>receipt_long</mat-icon> My orders</a>
+            <a routerLink="/account/profile"><mat-icon>person_outline</mat-icon> My account</a>
+      <a routerLink="/wishlist"><mat-icon>favorite_border</mat-icon> Wishlist</a>
+      <button type="button" class="logout" (click)="auth.logout()"><mat-icon>logout</mat-icon> Log out</button>
+    </nav>
+  </aside>
+
+  <!-- ===== Right: the orders ===== -->
+  <section class="orders" aria-labelledby="orders-title">
+    <div class="title">
+          @if (cancelError()) {
+      <p class="notice">{{ cancelError() }}</p>
+    }
+      <h1 id="orders-title">My orders</h1>
+      @if (!loading() && !loadError()) { <span class="count">{{ countText() }}</span> }
+    </div>
+
+    @if (loading()) {
+      <p class="hint">Loading your orders...</p>
+    } @else if (loadError()) {
+      <p class="notice">We couldn't load your orders. Start the API in Visual Studio, then refresh this page.</p>
+    } @else if (cards().length === 0) {
+      <div class="empty">
+        <div class="empty-title">No orders yet</div>
+        <p>When you place an order, it shows here with its progress.</p>
+        <a routerLink="/shop" class="primary">Start shopping</a>
+      </div>
+    } @else {
+      @for (c of cards(); track c.order.id) {
+        <article class="card">
+          <div class="card-top">
+            <div class="status">
+              <app-status-chip [status]="c.order.status" />
+              <span class="headline">{{ c.headline }}</span>
+            </div>
+            <span class="total">{{ inr(c.order.total) }}</span>
+          </div>
+
+          @if (c.showTrack) {
+            <div class="track" role="img" [attr.aria-label]="'Progress: ' + c.order.status">
+              @for (s of c.steps; track s.name) {
+                <div class="step" [class.done]="s.done">
+                  <span class="bar"></span>
+                  <span class="step-name">{{ s.name }}</span>
+                </div>
+              }
+            </div>
+          }
+
+          <div class="card-bottom">
+            <div class="photos">
+              @for (item of c.photos; track $index) {
+                <img [src]="imageOf(item)" [alt]="item.name" loading="lazy">
+              }
+            </div>
+            <div class="info">
+              <div class="items">{{ c.itemsText }}</div>
+              <div class="small">Order {{ c.order.orderNumber }} · Placed {{ c.placed }}</div>
+              <div class="small">{{ c.note }}</div>
+            </div>
+                 <div class="actions">
+              <a [routerLink]="['/order', c.order.id]" class="outline">{{ c.action }}</a>
+              @if (c.canCancel) {
+                <button type="button" class="cancel-link"
+                        [disabled]="cancellingId() === c.order.id"
+                        (click)="cancel(c.order)">
+                  {{ cancellingId() === c.order.id ? 'Cancelling...' : 'Cancel order' }}
+                </button>
+              }
+            </div>
+          </div>
+        </article>
+      }
+    }
+  </section>
+</div>

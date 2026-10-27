@@ -1,0 +1,128 @@
+@if (order(); as o) {
+  <header class="topbar head">
+    <a class="back" routerLink="/admin/orders"><mat-icon>chevron_left</mat-icon>All orders</a>
+    <h1>Order {{ o.orderNumber }}</h1>
+    <app-status-chip [status]="o.status" />
+    <span class="placed">Placed {{ longWhen(o.placedAt) }}</span>
+  </header>
+
+  <div class="page detail">
+
+    <!-- ===== Left: progress and items ===== -->
+    <div class="main-col">
+      <section class="panel box">
+        <h2>Progress</h2>
+        @if (o.status === 'Cancelled') {
+          <p class="cancelled-note">
+            This order is cancelled. Its {{ o.itemCount }} {{ o.itemCount === 1 ? 'item' : 'items' }} went back into stock.
+          </p>
+        }
+        <ol class="tracker" aria-label="Order progress">
+          @for (s of steps(); track s.label) {
+            <li [class.done]="s.done">
+              <span class="dot">@if (s.done) { <mat-icon>check</mat-icon> }</span>
+              <span class="step-label">{{ s.label }}</span>
+              <span class="step-when">{{ s.when }}</span>
+            </li>
+          }
+        </ol>
+      </section>
+
+      <section class="panel box items">
+        <h2>Items ({{ o.itemCount }})</h2>
+        @for (item of o.items; track item.productId + item.size) {
+          <div class="item">
+            <img [src]="imageOf(item)" [alt]="item.brand + ' ' + item.name">
+            <div class="item-text">
+              <div class="brand">{{ item.brand }}</div>
+              <div class="name">{{ item.name }}</div>
+              <div class="meta">@if (item.size) {Size {{ item.size }}, }qty {{ item.quantity }}</div>
+            </div>
+            <div class="prices">
+              <div class="price">{{ inr(item.price * item.quantity) }}</div>
+              @if (item.mrp > item.price) { <div class="mrp">{{ inr(item.mrp * item.quantity) }}</div> }
+            </div>
+          </div>
+        }
+        <hr>
+        <div class="row"><span>Total MRP</span><span>{{ inr(o.totalMrp) }}</span></div>
+        @if (discount() > 0) {
+          <div class="row"><span>Discount</span><span class="save">&minus;{{ inr(discount()) }}</span></div>
+        }
+        <div class="row">
+          <span>Delivery</span>
+          @if (o.deliveryFee === 0) { <span class="save">Free</span> } @else { <span>{{ inr(o.deliveryFee) }}</span> }
+        </div>
+        <div class="row total"><span>Order total</span><span>{{ inr(o.total) }}</span></div>
+      </section>
+    </div>
+
+    <!-- ===== Right: status, customer, payment ===== -->
+    <div class="side-col">
+      <section class="panel box">
+        <h2 id="status-title">Update status</h2>
+        <p class="hint">The customer sees the new status on their order page.</p>
+
+        <div class="options" role="radiogroup" aria-labelledby="status-title">
+          @for (opt of options(); track opt.status) {
+            <button type="button" class="option" role="radio"
+                    [class.on]="selected() === opt.status"
+                    [attr.aria-checked]="selected() === opt.status"
+                    [disabled]="!opt.allowed || saving()"
+                    (click)="choose(opt.status)">
+              <span class="radio"><span></span></span>
+              <span class="opt-name">{{ opt.status }}</span>
+              <span class="opt-hint">{{ opt.hint }}</span>
+            </button>
+          }
+        </div>
+
+        @if (warnCancel()) {
+          <p class="warn">
+            Cancelling returns {{ o.itemCount }} {{ o.itemCount === 1 ? 'item' : 'items' }} to stock and can't be undone.
+          </p>
+        }
+
+        @if (isFinal()) {
+          <p class="final">This order is {{ o.status.toLowerCase() }}, so its status can't change any more.</p>
+        } @else {
+          <button type="button" class="save-btn" [disabled]="!hasChange() || saving()" (click)="save()">
+            {{ saving() ? 'Saving...' : 'Save status' }}
+          </button>
+        }
+
+        @if (message(); as m) {
+          <p role="status" class="message" [class.error]="!m.ok">{{ m.text }}</p>
+        }
+      </section>
+
+      <section class="panel box">
+        <h2>Customer</h2>
+        <p class="text">
+          <strong>{{ o.address.fullName }}</strong>
+          <span class="tag">{{ o.address.addressType }}</span><br>
+          {{ o.address.house }}, {{ o.address.area }}<br>
+          @if (o.address.landmark) { {{ o.address.landmark }}<br> }
+          {{ o.address.city }}, {{ o.address.state }} {{ o.address.pincode }}<br>
+          Mobile: {{ o.address.mobile }}
+        </p>
+      </section>
+
+      <section class="panel box">
+        <h2>Payment</h2>
+        @if (o.paymentMethod === 'COD') {
+          <p class="text">Cash on delivery. Collect <strong>{{ inr(o.total) }}</strong> when it arrives.</p>
+        } @else {
+          <p class="text">UPI (demo). No money was taken.</p>
+        }
+      </section>
+    </div>
+  </div>
+} @else if (order() === null) {
+  <header class="topbar head">
+    <a class="back" routerLink="/admin/orders"><mat-icon>chevron_left</mat-icon>All orders</a>
+  </header>
+  <p class="state">We couldn't find this order. Orders made before the API restarted are gone.</p>
+} @else {
+  <p class="state">Loading the order...</p>
+}

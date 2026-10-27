@@ -1,0 +1,306 @@
+<header class="topbar head">
+  <a class="back" routerLink="/admin/products">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>
+    All products
+  </a>
+  <h1>{{ isNew() ? 'Add product' : 'Edit product' }}</h1>
+  @if (productId(); as id) { <span class="sub">Product #{{ id }}</span> }
+  @if (status() === 'ready') {
+    <div class="head-actions">
+      <a class="btn-secondary" routerLink="/admin/products">Cancel</a>
+      <!-- form="product-form" lets this button submit the form below, although it sits outside it -->
+      <!-- CHANGED (4D): also off while a photo uploads, or when there's no photo -->
+      <button type="submit" form="product-form" class="btn-primary" [disabled]="!canSave()">
+        {{ saving() ? 'Saving...' : isNew() ? 'Add product' : 'Save changes' }}
+      </button>
+    </div>
+  }
+</header>
+
+@if (status() === 'loading') {
+  <p class="state">Loading the product...</p>
+} @else if (status() === 'missing') {
+  <p class="state">We couldn't find this product. It may have been deleted, or the API restarted.</p>
+} @else {
+  @let p = preview();
+  <div class="page">
+
+    @if (message(); as m) {
+      <p role="status" class="banner" [class.error]="!m.ok">{{ m.text }}</p>
+    }
+    @if (photoPhase() === 'uploading') {
+      <p class="banner wait">{{ isNew() ? 'Add product' : 'Save changes' }} turns on when the upload finishes.</p>
+    }
+
+    <div class="columns">
+
+      <!-- ===== Form ===== -->
+      <form id="product-form" class="form-col" [formGroup]="form" (ngSubmit)="save()" novalidate>
+
+        <section class="panel box">
+          <h2>Basic details</h2>
+          <label class="field">
+            <span>Product name</span>
+            <input type="text" formControlName="name" [class.bad]="showError('name')">
+            @if (showError('name')) { <small class="err">Enter a name of 2 to 100 characters.</small> }
+          </label>
+          <div class="two">
+            <label class="field">
+              <span>Brand</span>
+              <input type="text" formControlName="brand" [class.bad]="showError('brand')">
+              @if (showError('brand')) { <small class="err">Enter the brand (up to 60 characters).</small> }
+            </label>
+            <label class="field">
+              <span>Category</span>
+              <select formControlName="category">
+                @for (c of categories; track c) { <option [value]="c">{{ c }}</option> }
+              </select>
+            </label>
+          </div>
+          <div class="field">
+            <span id="section-label">Section</span>
+            <div class="pills" role="group" aria-labelledby="section-label">
+              @for (s of sections; track s) {
+                <button type="button" class="pill" [class.on]="p.section === s"
+                        [attr.aria-pressed]="p.section === s" (click)="setSection(s)">{{ s }}</button>
+              }
+            </div>
+          </div>
+          <label class="field">
+            <span>Description</span>
+            <textarea rows="3" formControlName="description" [class.bad]="showError('description')"></textarea>
+            @if (showError('description')) { <small class="err">Keep the description under 1,000 characters.</small> }
+          </label>
+        </section>
+
+        <!-- ===== Photo box (NEW 4D) ===== -->
+        <section class="panel box">
+          <div class="photo-head">
+            <h2>Photo</h2>
+            <span class="hint">Shoppers see it on the product card and the product page.</span>
+          </div>
+
+          <!-- The real file picker is hidden; "Choose a photo" clicks it -->
+          <input #picker type="file" hidden accept="image/jpeg,image/png,image/webp" (change)="onFileChosen($event)">
+
+          @if (photoError(); as e) {
+            <div class="photo-alert" role="alert">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6"></path><path d="M12 16.5v.5"></path></svg>
+              <span><strong>{{ e.title }}</strong> {{ e.text }}</span>
+            </div>
+          }
+
+          <div class="photo-row">
+
+            <!-- The photo tile, 3:4 like the store card -->
+            <div class="tile-col">
+              <div class="tile">
+                @if (tileImage(); as src) {
+                  <img [src]="src" [class.dim]="photoPhase() === 'uploading'"
+                       [alt]="photoPhase() === 'idle' ? 'The photo shoppers see now' : 'The new photo'">
+                } @else {
+                  <div class="tile-empty">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><circle cx="9" cy="10" r="2"></circle><path d="M21 16l-5-5-9 9"></path></svg>
+                    <span>No photo yet</span>
+                  </div>
+                }
+                @if (photoPhase() === 'done') { <span class="chip-new">New</span> }
+                @if (photoPhase() === 'uploading') { <span class="tile-progress">Uploading {{ upload()?.progress }}%</span> }
+              </div>
+              @if (photoPhase() === 'idle' && hasPhoto()) {
+                <button type="button" class="btn-remove" (click)="removePhoto()">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                       stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"></path><path d="M9 7V4h6v3"></path><path d="M6 7l1 13h10l1-13"></path></svg>
+                  Remove
+                </button>
+              }
+            </div>
+
+            <!-- Right side: the drop zone, or the photo being uploaded -->
+            <div class="photo-side">
+              @if (photoPhase() === 'idle') {
+                <div class="drop" [class.over]="dragging()" [class.bad]="photoError() !== null"
+                     (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)" (drop)="onDrop($event)">
+                  <span class="drop-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"></path><path d="M7 9l5-5 5 5"></path><path d="M4 16v4h16v-4"></path></svg>
+                  </span>
+                  @if (dragging()) {
+                    <p class="drop-title over">Drop the photo to upload it</p>
+                  } @else {
+                    <p class="drop-title">Drag a photo here</p>
+                    <div class="drop-or">
+                      <span>or</span>
+                      <button type="button" class="btn-choose" (click)="picker.click()">Choose a photo</button>
+                    </div>
+                  }
+                  <p class="drop-hint">JPG, PNG or WebP, up to 5 MB</p>
+                </div>
+              } @else {
+                @if (upload(); as u) {
+                  <div class="file-card">
+                    <div class="file-row">
+                      @if (photoPhase() === 'uploading') {
+                        <span class="file-icon">
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><circle cx="9" cy="10" r="2"></circle><path d="M21 16l-5-5-9 9"></path></svg>
+                        </span>
+                      } @else {
+                        <span class="file-icon ok">
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+                        </span>
+                      }
+                      <div class="file-text">
+                        <div class="file-name">{{ u.name }}</div>
+                        <div class="file-meta">
+                          {{ u.size }}
+                          @if (photoPhase() === 'uploading') { · Uploading... {{ u.progress }}% }
+                          @else if (u.dims) { · {{ u.dims }} }
+                        </div>
+                      </div>
+                      @if (photoPhase() === 'uploading') {
+                        <button type="button" class="btn-secondary" (click)="cancelUpload()">Cancel</button>
+                      }
+                    </div>
+
+                    @if (photoPhase() === 'uploading') {
+                      <div class="progress" role="progressbar" aria-label="Upload progress"
+                           aria-valuemin="0" aria-valuemax="100" [attr.aria-valuenow]="u.progress">
+                        <span [style.width.%]="u.progress"></span>
+                      </div>
+                    } @else {
+                      <p class="photo-ok" role="status">
+                        Uploaded. Press {{ isNew() ? 'Add product' : 'Save changes' }} to show it in the store.
+                      </p>
+                      @if (u.wide) {
+                        <p class="photo-warn">This photo is wider than it is tall, so the store card will crop its sides. A portrait photo, 3 : 4, looks best. You can still use it.</p>
+                      }
+                      <div class="file-actions">
+                        <button type="button" class="btn-secondary" (click)="undoPhoto()">
+                          {{ savedImageUrl() ? 'Undo, keep the old photo' : 'Undo' }}
+                        </button>
+                        <button type="button" class="link-btn" (click)="picker.click()">Choose a different photo</button>
+                      </div>
+                    }
+                  </div>
+                }
+              }
+
+              @if (photoPhase() === 'idle' && !hasPhoto()) {
+                <p class="photo-warn">
+                  Add a photo before you save. Shoppers can't see a product without one.
+                  @if (savedImageUrl()) { <button type="button" class="link-btn" (click)="undoPhoto()">Undo</button> }
+                </p>
+              }
+
+              <p class="photo-tip">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v6"></path><path d="M12 7.5v.5"></path></svg>
+                <span>Best fit: a portrait photo, 3 : 4, like 900 × 1200 px. It fills the store card with no cropping.</span>
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel box">
+          <h2>Price and stock</h2>
+          <div class="three">
+            <label class="field">
+              <span>Selling price</span>
+              <span class="money" [class.bad]="showError('price') || form.hasError('priceAboveMrp')">
+                ₹<input type="number" min="1" formControlName="price">
+              </span>
+            </label>
+            <label class="field">
+              <span>MRP</span>
+              <span class="money" [class.bad]="showError('mrp')">
+                ₹<input type="number" min="0" formControlName="mrp">
+              </span>
+            </label>
+            <label class="field">
+              <span>Stock</span>
+              <input type="number" min="0" formControlName="stock" [class.bad]="showError('stock')">
+            </label>
+          </div>
+          @if (showError('price')) {
+            <p class="note error">Enter a selling price above ₹0.</p>
+          } @else if (form.hasError('priceAboveMrp')) {
+            <p class="note error">Price can't be higher than MRP.</p>
+          } @else if (showError('stock')) {
+            <p class="note error">Stock must be between 0 and 10,000.</p>
+          } @else {
+            <p class="note">
+              Shoppers see <strong>{{ inr(p.price) }}</strong>
+              @if (p.off > 0) { <s>{{ inr(p.mrp) }}</s> <strong class="off">{{ p.off }}% off</strong> }
+            </p>
+          }
+          <small class="hint">Stock under 5 shows "Only N left" in the store. Stock 0 shows "Sold out" and turns off Add to bag.</small>
+        </section>
+
+        <section class="panel box">
+          <h2>Sizes</h2>
+          <small class="hint">Pick every size you sell. Shoppers choose one before adding to the bag.</small>
+          <div class="pills" role="group" aria-label="Sizes">
+            @for (z of sizeOptions; track z) {
+              <button type="button" class="pill size" [class.on]="sizes().includes(z)"
+                      [attr.aria-pressed]="sizes().includes(z)" (click)="toggleSize(z)">{{ z }}</button>
+            }
+          </div>
+          <label class="field">
+            <span>More sizes <em>(optional)</em></span>
+            <input type="text" formControlName="moreSizes" placeholder="For jeans or kidswear, e.g. 28, 30, 32 or 4-5Y">
+          </label>
+          @if (sizeError() && submitted()) { <small class="err">Pick at least one size.</small> }
+        </section>
+      </form>
+
+      <!-- ===== Shop preview ===== -->
+      <aside class="panel box preview">
+        <div>
+          <h2>Shop preview</h2>
+          <small class="hint">How the card looks in the store. It shows a new photo as soon as it's uploaded.</small>
+        </div>
+        <div class="card">
+          <div class="media">
+            @if (p.image) {
+              <img [src]="p.image" alt="">
+            } @else {
+              <div class="media-empty">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><circle cx="9" cy="10" r="2"></circle><path d="M21 16l-5-5-9 9"></path></svg>
+                <span>No photo</span>
+              </div>
+            }
+            @if (p.tag; as tag) { <span [class]="'tag ' + tag.tone">{{ tag.text }}</span> }
+            <span class="heart" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                   stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"></path></svg>
+            </span>
+            @if (p.rating) {
+              <span class="rating">{{ p.rating }} <span class="star">★</span> <span class="bar">|</span> <span class="cnt">{{ p.ratingCount }}</span></span>
+            }
+          </div>
+          <div class="card-brand">{{ p.brand }}</div>
+          <div class="card-name">{{ p.name }}</div>
+          <div class="card-price">
+            <strong>{{ inr(p.price) }}</strong>
+            @if (p.off > 0) { <s>{{ inr(p.mrp) }}</s> <span class="off">{{ p.off }}% off</span> }
+          </div>
+          <div class="card-sizes">
+            @for (s of allSizes(); track s) { <span>{{ s }}</span> }
+          </div>
+        </div>
+        <div class="facts">
+          <div><strong>{{ p.section }}</strong> · {{ p.category }}</div>
+          <div>{{ p.stockText }}</div>
+          <!-- NEW (4D) -->
+          <div class="photo-note"><span [class]="'dot ' + photoNote().tone"></span>{{ photoNote().text }}</div>
+        </div>
+      </aside>
+    </div>
+  </div>
+}

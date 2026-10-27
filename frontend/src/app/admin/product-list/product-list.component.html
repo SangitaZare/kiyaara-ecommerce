@@ -1,0 +1,117 @@
+<header class="topbar">
+  <div class="title">
+    <h1>Products</h1>
+    @if (products(); as list) { <span class="sub">{{ list.length }} products</span> }
+  </div>
+  <div class="tools">
+    <label class="search">
+      <span class="sr-only">Search products</span>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+      <input #box type="search" placeholder="Search name, brand or category"
+             [value]="search()" (input)="search.set(box.value)">
+    </label>
+    <a class="btn-primary" routerLink="/admin/products/new">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+           stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+      Add product
+    </a>
+  </div>
+</header>
+
+<div class="page">
+
+  <!-- ===== Filters ===== -->
+  <div class="filters">
+    <div class="chips" role="group" aria-label="Filter by section">
+      @for (s of sections; track s) {
+        <button type="button" class="chip-btn" [class.on]="section() === s"
+                [attr.aria-pressed]="section() === s" (click)="section.set(s)">
+          <span>{{ s }}</span>
+          <span class="count">{{ counts()[s] }}</span>
+        </button>
+      }
+    </div>
+    <button type="button" class="chip-btn low" [class.on]="lowOnly()"
+            [attr.aria-pressed]="lowOnly()" (click)="lowOnly.set(!lowOnly())">
+      <span class="red-dot"></span>
+      <span>Low or sold out</span>
+      <span class="count">{{ lowCount() }}</span>
+    </button>
+  </div>
+
+  @if (message(); as m) {
+    <p role="status" class="banner" [class.error]="!m.ok">{{ m.text }}</p>
+  }
+
+  <!-- ===== Table ===== -->
+  <section class="panel table-panel">
+    @if (products() === undefined) {
+      <p class="state">Loading products...</p>
+    } @else if (products() === null) {
+      <p class="state error">We couldn't load the products. Check that the API is running, then refresh.</p>
+    } @else {
+      <div class="table-scroll">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Product</th><th>Section</th><th>Category</th><th>Price</th><th>Stock</th><th>Sizes</th>
+              <th><span class="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (p of rows(); track p.id) {
+              @let look = stockLook(p.stock);
+              <tr>
+                <td>
+                  <div class="product">
+                    <img [src]="imageOf(p)" [alt]="p.name" loading="lazy">
+                    <div>
+                      <div class="name">{{ p.name }}</div>
+                      <div class="brand">{{ p.brand }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td>{{ p.gender }}</td>
+                <td class="muted">{{ p.category }}</td>
+                <td class="price">
+                  <div class="now">{{ inr(p.price) }}</div>
+                  @if (discountPercent(p) > 0) {
+                    <div class="was"><s>{{ inr(p.mrp) }}</s> <span class="off">{{ discountPercent(p) }}% off</span></div>
+                  }
+                </td>
+                <td>
+                  <div class="stock">
+                    <span class="stock-num">{{ p.stock }}</span>
+                    <span [class]="'stock-chip ' + look.tone"><span class="dot"></span>{{ look.label }}</span>
+                  </div>
+                </td>
+                <td class="sizes">{{ p.sizes.join(', ') || 'None' }}</td>
+                <td class="actions">
+                  @if (confirmId() === p.id) {
+                    <span class="confirm">
+                      <span class="ask">Delete?</span>
+                      <button type="button" class="btn-danger" [disabled]="deleting()" (click)="remove(p)">Yes, delete</button>
+                      <button type="button" class="btn-plain" (click)="confirmId.set(null)">Keep</button>
+                    </span>
+                  } @else {
+                    <a class="btn-outline" [routerLink]="['/admin/products', p.id]">Edit</a>
+                    <button type="button" class="icon-btn" [attr.aria-label]="'Delete ' + p.name" (click)="askDelete(p.id)">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M4 7h16"></path><path d="M9 7V4h6v3"></path><path d="M6 7l1 13h10l1-13"></path><path d="M10 11v6M14 11v6"></path>
+                      </svg>
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      @if (rows().length === 0) {
+        <p class="state">No products match. Try another section or search.</p>
+      }
+    }
+  </section>
+</div>

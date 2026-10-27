@@ -1,0 +1,92 @@
+<div class="auth">
+
+  <!-- ===== Left: the log in form ===== -->
+  <div class="form-side">
+    <div class="top">
+      <a routerLink="/" class="logo" aria-label="Kiyaara home">Kiyaara<span class="dot">.</span></a>
+      <a routerLink="/" class="back"><mat-icon>chevron_left</mat-icon> Back to shop</a>
+    </div>
+
+    <div class="middle">
+      <form class="box" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+
+        @if (fromCheckout) {
+          <p class="note">
+            <mat-icon>shopping_bag</mat-icon>
+            <span><strong>Log in to place your order.</strong> Your bag is saved, so nothing is lost.</span>
+          </p>
+        } @else if (loginEnded) {
+          <p class="note">
+            <mat-icon>schedule</mat-icon>
+            <span>Your login has ended. Please log in again.</span>
+          </p>
+        }
+
+        <div>
+          <h1>Welcome back</h1>
+          <p class="lead">Log in to see your orders and check out faster.</p>
+        </div>
+
+        @if (error()) {
+          <p class="alert" role="alert">{{ error() }}</p>
+        }
+
+        <div class="field">
+          <label for="email">Email address</label>
+          <div class="input" [class.invalid]="isInvalid('email')">
+            <mat-icon>mail_outline</mat-icon>
+            <input id="email" type="email" formControlName="email" autocomplete="email"
+                   placeholder="you@example.com" [attr.aria-invalid]="isInvalid('email')">
+          </div>
+          @if (isInvalid('email')) { <span class="error">Enter a valid email address.</span> }
+        </div>
+
+        <div class="field">
+          <div class="label-row">
+            <label for="password">Password</label>
+            <a routerLink="/forgot-password" class="small-link">Forgot password?</a>
+          </div>
+          <div class="input with-button" [class.invalid]="isInvalid('password')">
+            <mat-icon>lock_outline</mat-icon>
+            <input id="password" [type]="showPassword() ? 'text' : 'password'" formControlName="password"
+                   autocomplete="current-password" placeholder="Your password"
+                   [attr.aria-invalid]="isInvalid('password')">
+            <button type="button" class="show" (click)="showPassword.set(!showPassword())"
+                    [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'">
+              {{ showPassword() ? 'Hide' : 'Show' }}
+            </button>
+          </div>
+          @if (isInvalid('password')) { <span class="error">Enter your password.</span> }
+        </div>
+
+        <button type="submit" class="primary" [disabled]="sending()">
+          {{ sending() ? 'Logging in...' : 'Log in' }}
+        </button>
+
+        <div class="divider">or</div>
+        <button type="button" class="ghost" (click)="googleNote.set(true)">Continue with Google</button>
+        @if (googleNote()) {
+          <p class="hint-box" role="status">Google login is coming soon. For now, please log in with your email.</p>
+        }
+
+        <p class="switch">
+          New to Kiyaara? <a routerLink="/register" [queryParams]="registerParams()">Create an account</a>
+        </p>
+
+        <p class="demo">Try it: <strong>priya&#64;example.com</strong> and <strong>Kiyaara123</strong></p>
+      </form>
+    </div>
+
+    <div class="foot">
+      <span>&copy; {{ year }} Kiyaara</span>
+      <nav aria-label="Help">
+        <a routerLink="/">Help</a>
+        <a routerLink="/">Privacy</a>
+        <a routerLink="/">Terms</a>
+      </nav>
+    </div>
+  </div>
+
+  <!-- ===== Right: brand panel ===== -->
+  <app-auth-panel variant="login" />
+</div>

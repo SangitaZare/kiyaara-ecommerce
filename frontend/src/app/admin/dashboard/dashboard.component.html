@@ -1,0 +1,103 @@
+<header class="topbar">
+  <div>
+    <h1>Dashboard</h1>
+    <div class="sub">{{ today }}</div>
+  </div>
+  <span class="who-chip"><span class="dot"></span>Signed in as {{ auth.firstName() }} · Admin</span>
+</header>
+
+@if (summary(); as s) {
+  <div class="page">
+
+    <!-- ===== Four numbers ===== -->
+    <div class="stats">
+      @for (card of stats(); track card.label) {
+        <a class="panel stat" [routerLink]="card.link" [queryParams]="card.query">
+          <span class="stat-label">{{ card.label }}</span>
+          <span [class]="'stat-value ' + card.tone">{{ card.value }}</span>
+          <span class="stat-note">{{ card.note }}</span>
+        </a>
+      }
+    </div>
+
+    <div class="split">
+
+      <!-- ===== Recent orders ===== -->
+      <section class="panel recent">
+        <div class="panel-head">
+          <h2>Recent orders</h2>
+          <a class="text-link" routerLink="/admin/orders">View all orders</a>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr><th>Order</th><th>Customer</th><th class="num">Total</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+              @for (o of s.recentOrders; track o.id) {
+                <tr>
+                  <td>
+                    <a class="order-link" [routerLink]="['/admin/orders', o.id]">{{ o.orderNumber }}</a>
+                    <span class="small">{{ shortWhen(o.placedAt) }}</span>
+                  </td>
+                  <td>{{ o.address.fullName }}<span class="small">{{ o.address.city }}</span></td>
+                  <td class="num">{{ inr(o.total) }}</td>
+                  <td><app-status-chip [status]="o.status" /></td>
+                </tr>
+              } @empty {
+                <tr><td colspan="4" class="empty">No orders yet. Place one from the store to see it here.</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <div class="side-col">
+
+        <!-- ===== Stock health ===== -->
+        <section class="panel box">
+          <h2>Stock health</h2>
+          <p class="box-sub">{{ inr(s.stockValue) }} of stock across {{ s.productCount }} products</p>
+          <div class="bar" role="img"
+               [attr.aria-label]="s.inStock + ' in stock, ' + s.runningLow + ' running low, ' + s.soldOut + ' sold out'">
+            <span class="ok" [style.flex]="s.inStock"></span>
+            <span class="low" [style.flex]="s.runningLow"></span>
+            <span class="out" [style.flex]="s.soldOut"></span>
+          </div>
+          <div class="legend">
+            <span><i class="ok"></i>{{ s.inStock }} in stock</span>
+            <span><i class="low"></i>{{ s.runningLow }} running low</span>
+            <span><i class="out"></i>{{ s.soldOut }} sold out</span>
+          </div>
+        </section>
+
+        <!-- ===== Needs attention ===== -->
+        <section class="panel box">
+          <h2>Needs attention</h2>
+          <div class="attention">
+            @for (p of s.needsAttention; track p.id) {
+              <div class="att-row">
+                <img [src]="imageOf(p)" [alt]="p.name">
+                <div class="att-text">
+                  <div class="att-name">{{ p.name }}</div>
+                  @if (p.stock === 0) {
+                    <div class="att-state is-out">Sold out</div>
+                  } @else {
+                    <div class="att-state is-low">Only {{ p.stock }} left</div>
+                  }
+                </div>
+                <a class="text-link" [routerLink]="['/admin/products', p.id]">Restock</a>
+              </div>
+            } @empty {
+              <p class="box-sub">Every product has 5 or more in stock.</p>
+            }
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+} @else if (summary() === null) {
+  <p class="state error">We couldn't load the dashboard. Check that the API is running, then refresh.</p>
+} @else {
+  <p class="state">Loading the dashboard...</p>
+}
