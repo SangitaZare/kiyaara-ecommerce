@@ -110,6 +110,35 @@ builder.Services.AddRateLimiter(options =>
                 Window = TimeSpan.FromMinutes(10),
                 QueueLimit = 0
             }));
+
+    // AI assistant: every message costs Gemini quota, so each account gets 10 messages a minute.
+    // Counted per logged-in user (from the token), so people sharing one Wi-Fi don't block each other.
+    options.AddPolicy("assistant", httpContext =>
+    {
+        var customerId = httpContext.User.CustomerId();
+        var key = customerId != 0
+            ? $"user:{customerId}"
+            : $"ip:{httpContext.Connection.RemoteIpAddress}";    // not logged in: [Authorize] answers 401 anyway
+        return RateLimitPartition.GetFixedWindowLimiter(key, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 10,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0
+        });
+    });
+
+    // Any 429 says why and how long to wait, so Angular can show a message instead of a blank error
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        var message = "Too many requests. Please wait a moment and try again.";
+        if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
+        {
+            var seconds = (int)Math.Ceiling(retryAfter.TotalSeconds);
+            context.HttpContext.Response.Headers.RetryAfter = seconds.ToString();
+            message = $"Too many requests. Please try again in {seconds} seconds.";
+        }
+        await context.HttpContext.Response.WriteAsJsonAsync(new { error = message }, cancellationToken);
+    };
 });
 
 // Enums travel as text ("Packed") in both directions, and numbers like 7 are refused
@@ -144,6 +173,8 @@ builder.Services.AddHttpClient<ILlmClient, GeminiLlmClient>(client =>
     client.BaseAddress = new Uri("https://generativelanguage.googleapis.com/v1beta/");
     client.Timeout = TimeSpan.FromSeconds(90);
 });
+builder.Services.AddScoped<ProductSearchService>();   // shop search, also used by the assistant
+builder.Services.AddScoped<AssistantTools>();         // what the assistant can look up
 var app = builder.Build();
 
 // Create the database on the first run, apply new migrations, then seed what's missing
@@ -189,10 +220,12 @@ app.UseStaticFiles(new StaticFileOptions
 
 // 4. CORS - before authentication, so even a 401 answer reaches Angular
 app.UseCors(AngularPolicy);
-app.UseRateLimiter();
 
 // 5. Read the token (who is calling?), then check [Authorize] (are they allowed?)
 app.UseAuthentication();
+
+// 6. Rate limits - after authentication, so the "assistant" limit can count per user
+app.UseRateLimiter();
 app.UseAuthorization();
 
 app.MapControllers();

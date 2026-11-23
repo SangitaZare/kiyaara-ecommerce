@@ -8,8 +8,10 @@ public interface ILlmClient
     Task<LlmResponse> GenerateAsync(LlmRequest request, CancellationToken ct = default);
 }
 
-public record LlmToolDefinition(string Name, string Description, object Parameters);
-public record LlmToolCall(string Name, JsonElement Args);
+public record LlmToolDefinition(string Name, string Description, object? Parameters = null);   // null = takes no input
+// Signature: an opaque token some providers attach to a call (Gemini's "thoughtSignature").
+// It must be sent back unchanged with the call in the next request, or the provider refuses it.
+public record LlmToolCall(string Name, JsonElement Args, string? Signature = null);
 public record LlmRequest(string SystemPrompt, List<LlmMessage> Messages, List<LlmToolDefinition>? Tools = null);
 public record LlmResponse(string? Text, List<LlmToolCall> ToolCalls);
 
