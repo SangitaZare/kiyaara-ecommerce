@@ -1,8 +1,7 @@
-using Kiyaara.Api.Data;
+﻿using Kiyaara.Api.Data;
 using Kiyaara.Api.Models;
 using Kiyaara.Api.Services;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -65,11 +64,11 @@ public class ProductsController : ControllerBase
     // POST api/products
     [Authorize(Roles = UserRoles.Admin)]                 // (4C): admins only
     [HttpPost]
-    public async Task<ActionResult<Product>> Create(Product product)
+    public async Task<ActionResult<Product>> Create(ProductInput input)
     {
-        product.Id = 0;                                       // SQL Server chooses the id
-        if (product.Mrp == 0) product.Mrp = product.Price;   // no MRP given = no discount
-        product.CreatedAt = DateTime.UtcNow;
+        // A new product: SQL Server chooses the id; rating and date are the shop's, not the form's
+        var product = new Product { CreatedAt = DateTime.UtcNow };
+        input.ApplyTo(product);
 
         _db.Products.Add(product);
         await _db.SaveChangesAsync();                         // INSERT happens here; product.Id is now set
@@ -79,21 +78,12 @@ public class ProductsController : ControllerBase
     // PUT api/products/2
     [Authorize(Roles = UserRoles.Admin)]                 // (4C): admins only
     [HttpPut("{id:int}")]
-    public async Task<IActionResult> Update(int id, Product updated)
+    public async Task<IActionResult> Update(int id, ProductInput input)
     {
         var product = await _db.Products.FindAsync(id);       // tracked: EF Core sees what changes
         if (product is null) return NotFound();
 
-        product.Name = updated.Name;
-        product.Brand = updated.Brand;
-        product.Category = updated.Category;
-        product.Gender = updated.Gender;
-        product.Description = updated.Description;
-        product.ImageUrl = updated.ImageUrl;                  // a new upload's address arrives here
-        product.Price = updated.Price;
-        product.Mrp = updated.Mrp == 0 ? updated.Price : updated.Mrp;
-        product.Stock = updated.Stock;
-        product.Sizes = updated.Sizes;
+        input.ApplyTo(product);                               // rating, rating count and date are kept
 
         try
         {
@@ -120,10 +110,6 @@ public class ProductsController : ControllerBase
         return NoContent();
     }
 
-    // GET api/products/internal  (Day 17 extra: CORS disabled for this endpoint)
-    [HttpGet("internal")]
-    [DisableCors]
-    public IActionResult InternalOnly() => Ok("This endpoint ignores the CORS policy");
     // GET api/products/search?q=kurta&maxPrice=1500&size=M&inStock=true&page=1   (everyone)
     [HttpGet("search")]
     public async Task<ActionResult<ProductSearchResult>> Search([FromQuery] ProductSearchQuery search, CancellationToken cancellationToken)
