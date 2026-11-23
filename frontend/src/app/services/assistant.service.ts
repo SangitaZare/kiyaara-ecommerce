@@ -39,10 +39,16 @@ export class AssistantService {
     this.messages.update(list => [...list, { role: 'user', text: message }]);
     this.sending.set(true);
 
-    const request: ChatRequest = { messages: this.messages().slice(-HISTORY_SENT) };
+    // Only the words go back to the API: cards are for showing, and the API reloads products itself
+    const request: ChatRequest = {
+      messages: this.messages().slice(-HISTORY_SENT).map(({ role, text }) => ({ role, text }))
+    };
     this.http.post<ChatResponse>(this.apiUrl, request).subscribe({
       next: response => {
-        this.messages.update(list => [...list, { role: 'assistant', text: response.reply }]);
+        this.messages.update(list => [
+          ...list,
+          { role: 'assistant', text: response.reply, products: response.products ?? [] }
+        ]);
         this.sending.set(false);
       },
       error: (err: HttpErrorResponse) => {

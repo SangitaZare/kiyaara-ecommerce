@@ -62,6 +62,19 @@ public class AssistantControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task Sends_cards_for_the_products_the_reply_links_to()
+    {
+        _llm.Script(Text("Have a look at the [Banarasi Silk Blend Saree](/product/2)."));
+
+        var result = await _controller.Chat(Ask(("user", "Any sarees?")), default);
+
+        var response = Assert.IsType<ChatResponse>(Assert.IsType<OkObjectResult>(result.Result).Value);
+        var card = Assert.Single(response.Products);
+        Assert.Equal(2, card.Id);
+        Assert.Equal(3299m, card.Price);
+    }
+
+    [Fact]
     public async Task Tool_results_use_the_logged_in_customer_not_the_model()
     {
         _llm.Script(

@@ -169,6 +169,59 @@ public class AssistantToolsTests : IDisposable
         Assert.Equal("Unknown tool \"delete_everything\".", Error(result));
     }
 
+    // ---------------- Product cards ----------------
+
+    [Fact]
+    public async Task Cards_follow_the_products_linked_in_the_reply_in_order()
+    {
+        var cards = await _tools.CardsForReplyAsync(
+            "Try the [Saree](/product/2), the [Kurta Set](/product/1) or the [Saree](/product/2) again.");
+
+        Assert.Equal([2, 1], cards.Select(c => c.Id));
+        Assert.Equal("Banarasi Silk Blend Saree", cards[0].Name);
+    }
+
+    [Fact]
+    public async Task Cards_use_database_prices_not_the_replys_text()
+    {
+        var card = Assert.Single(await _tools.CardsForReplyAsync("[A bargain at ₹10](/product/1)"));
+
+        Assert.Equal(1499m, card.Price);
+        Assert.Equal(2999m, card.Mrp);
+        Assert.True(card.InStock);
+    }
+
+    [Fact]
+    public async Task Cards_mark_sold_out_products_and_skip_missing_ones()
+    {
+        var cards = await _tools.CardsForReplyAsync("[Shirt](/product/3) and [Gone](/product/999)");
+
+        var shirt = Assert.Single(cards);
+        Assert.False(shirt.InStock);
+    }
+
+    [Fact]
+    public async Task Cards_ignore_order_links_and_text_without_links()
+    {
+        Assert.Empty(await _tools.CardsForReplyAsync("Your order [KY-1003](/order/1003) is packed. Product 2 is nice."));
+    }
+
+    [Fact]
+    public async Task Cards_stop_at_the_first_six_products()
+    {
+        // Six more products, so ten exist
+        _data.Db.Products.AddRange(Enumerable.Range(5, 6).Select(id => new Models.Product
+        {
+            Id = id, Name = $"Extra {id}", Brand = "Test Brand", Category = "Tops", Gender = "Women", Price = 499, Mrp = 999, Stock = 3
+        }));
+        await _data.Db.SaveChangesAsync();
+
+        var reply = string.Join(", ", Enumerable.Range(1, 10).Select(i => $"[P{i}](/product/{i})"));
+        var cards = await _tools.CardsForReplyAsync(reply);
+
+        Assert.Equal([1, 2, 3, 4, 5, 6], cards.Select(c => c.Id));
+    }
+
     [Fact]
     public void Every_definition_has_a_name_the_tools_can_run()
     {

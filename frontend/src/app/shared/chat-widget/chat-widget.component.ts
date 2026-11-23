@@ -3,7 +3,9 @@ import { Router, RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { AssistantService } from '../../services/assistant.service';
 import { AuthService } from '../../services/auth.service';
+import { ProductCard } from '../../models/assistant.model';
 import { Block, parseChatMarkdown } from './chat-markdown';
+import { ChatProductCardsComponent } from './chat-product-cards.component';
 
 // Ready-made questions for an empty chat, so customers see what the assistant can do
 const SUGGESTIONS = [
@@ -27,12 +29,13 @@ interface ThreadItem {
   role: 'user' | 'assistant';
   text: string;
   blocks: Block[];
+  products?: ProductCard[];
 }
 
 @Component({
   selector: 'app-chat-widget',
   standalone: true,
-  imports: [RouterLink, MatIconModule],
+  imports: [RouterLink, MatIconModule, ChatProductCardsComponent],
   host: { '(document:keydown.escape)': 'close()' },
   template: `
     @if (!open()) {
@@ -118,6 +121,9 @@ interface ThreadItem {
                   }
                 }
               </div>
+              @if (m.products?.length) {
+                <app-chat-product-cards [products]="m.products!" (opened)="followedLink()" />
+              }
             }
 
             @if (chat.sending()) {

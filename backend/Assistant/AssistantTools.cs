@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Kiyaara.Api.Data;
 using Kiyaara.Api.Models;
 using Kiyaara.Api.Services;
@@ -6,11 +7,15 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Kiyaara.Api.Assistant;
 
+// What the chat window needs to draw one product card under a reply
+public record ProductCard(int Id, string Name, string Brand, string ImageUrl,
+    decimal Price, decimal Mrp, double Rating, bool InStock);
+
 // The tools the model may call to look things up instead of guessing.
 // Definitions tell the model what exists; ExecuteAsync runs one call and returns JSON for the model.
 // Order tools only ever see the logged-in customer's own orders: the customer id comes from the
 // token (passed in by the controller), never from the model's arguments.
-public class AssistantTools(KiyaaraDbContext db, ProductSearchService search)
+public partial class AssistantTools(KiyaaraDbContext db, ProductSearchService search)
 {
     public const string SearchProducts = "search_products";
     public const string GetProduct = "get_product";
@@ -194,6 +199,34 @@ public class AssistantTools(KiyaaraDbContext db, ProductSearchService search)
             url = $"/order/{o.Id}"
         };
     }
+
+    // ---------------- Product cards for the chat window ----------------
+
+    // The products a reply links to ("/product/7"), in the order they appear, read fresh from the
+    // database: the card's price and stock never come from the model's text.
+    public async Task<List<ProductCard>> CardsForReplyAsync(string reply, CancellationToken ct = default)
+    {
+        var ids = ProductLink().Matches(reply)
+            .Select(m => int.Parse(m.Groups[1].Value))
+            .Distinct()
+            .Take(MaxCards)
+            .ToList();
+        if (ids.Count == 0) return [];
+
+        var found = await db.Products.AsNoTracking()
+            .Where(p => ids.Contains(p.Id))
+            .Select(p => new ProductCard(p.Id, p.Name, p.Brand, p.ImageUrl, p.Price, p.Mrp, p.Rating, p.Stock > 0))
+            .ToListAsync(ct);
+
+        // Keep the reply's order; ids that no longer exist are simply left out
+        return ids.Select(id => found.FirstOrDefault(c => c.Id == id)).OfType<ProductCard>().ToList();
+    }
+
+    private const int MaxCards = 6;
+
+    // "(/product/7)" as written in a Markdown link
+    [GeneratedRegex(@"\(/product/(\d{1,9})\)")]
+    private static partial Regex ProductLink();
 
     // ---------------- Helpers ----------------
 
