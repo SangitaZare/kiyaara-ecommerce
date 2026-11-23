@@ -18,6 +18,10 @@ public class Customer
     public string Role { get; set; } = UserRoles.Customer;     // NEW (4C): "Customer" or "Admin"
     public DateTime CreatedAt { get; set; }
 
+    // Goes up by one whenever the password changes. Every login token carries the number it was made
+    // with, and a token with an older number is refused: a reset or change logs out every other device.
+    public int TokenVersion { get; set; }
+
     // Forgot password: a scrambled copy of the reset code and when it stops working
     public string? ResetTokenHash { get; set; }
     public DateTime? ResetTokenExpiresAt { get; set; }

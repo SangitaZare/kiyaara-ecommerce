@@ -83,6 +83,18 @@ builder.Services
             NameClaimType = CustomerClaims.Name,
             RoleClaimType = CustomerClaims.Role
         };
+
+        // A signed, unexpired token is still refused when its password has changed since (or the account
+        // is gone). The API then answers 401 and Angular sends the person to the login page.
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = async context =>
+            {
+                var db = context.HttpContext.RequestServices.GetRequiredService<KiyaaraDbContext>();
+                if (!await SessionCheck.IsCurrentAsync(db, context.Principal!, context.HttpContext.RequestAborted))
+                    context.Fail("This login has ended. Please log in again.");
+            }
+        };
     });
 builder.Services.AddAuthorization();
 // Rate limits: each visitor (by IP address) gets a fixed number of tries per time window

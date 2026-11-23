@@ -77,8 +77,11 @@ export class AuthService {
   }
 
   // My account: change the password while logged in
-  changePassword(request: ChangePasswordRequest): Observable<unknown> {
-    return this.http.post(`${this.apiUrl}/change-password`, request);
+  // The API answers with a fresh login for this device (logins elsewhere stop working), so keep it
+  changePassword(request: ChangePasswordRequest): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.apiUrl}/change-password`, request).pipe(
+      tap(response => this.start(response))
+    );
   }
 
   // ---------- Logging out ----------
