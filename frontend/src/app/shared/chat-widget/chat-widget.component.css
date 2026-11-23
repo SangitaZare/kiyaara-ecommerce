@@ -194,6 +194,34 @@ header {
   text-underline-offset: 2px;
 }
 
+/* A reply that is still arriving: hidden until its first words, then a blinking cursor at the end */
+.msg.empty {
+  display: none;
+}
+.msg.streaming > :last-child::after {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  background: var(--k-peacock);
+  animation: blink 1s steps(2, start) infinite;
+}
+@keyframes blink {
+  to { visibility: hidden; }
+}
+
+/* "Searching the catalogue…" while the assistant looks something up */
+.status {
+  align-self: flex-start;
+  margin-top: -4px;
+  padding-left: 4px;
+  font-size: 12px;
+  font-style: italic;
+  color: var(--k-muted);
+}
+
 /* Three bouncing dots while waiting */
 .typing {
   display: flex;
@@ -311,6 +339,7 @@ textarea:focus {
 
 @media (prefers-reduced-motion: reduce) {
   .typing span,
+  .msg.streaming > :last-child::after,
   .launcher,
   .panel {
     animation: none;

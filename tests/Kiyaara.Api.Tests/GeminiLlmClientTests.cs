@@ -152,10 +152,82 @@ public class GeminiLlmClientTests
         Assert.Contains("no answer", error.Message);
     }
 
+    // ---------------- Streaming ----------------
+
+    private static string Sse(params string[] events) => string.Concat(events.Select(e => $"data: {e}\r\n\r\n"));
+
+    private static async Task<List<LlmStreamChunk>> ReadAll(IAsyncEnumerable<LlmStreamChunk> stream)
+    {
+        var chunks = new List<LlmStreamChunk>();
+        await foreach (var chunk in stream) chunks.Add(chunk);
+        return chunks;
+    }
+
+    [Fact]
+    public async Task Stream_yields_text_pieces_and_tool_calls_in_order()
+    {
+        _gemini.Answer(HttpStatusCode.OK, Sse(
+            """{ "candidates": [ { "content": { "parts": [ { "text": "Here " } ] } } ] }""",
+            """{ "candidates": [ { "content": { "parts": [ { "text": "you go." } ] } } ] }""",
+            """{ "candidates": [ { "content": { "parts": [ { "functionCall": { "name": "get_product", "args": { "id": 2 } }, "thoughtSignature": "sig-9" } ] } } ] }""",
+            """{ "candidates": [ { "content": { "parts": [ { "text": "" } ] }, "finishReason": "STOP" } ] }"""));
+
+        var chunks = await ReadAll(Client().StreamAsync(Hello()));
+
+        Assert.Equal(["Here ", "you go."], chunks.Where(c => c.Text is not null).Select(c => c.Text));
+        var call = Assert.Single(chunks, c => c.ToolCall is not null).ToolCall!;
+        Assert.Equal("get_product", call.Name);
+        Assert.Equal("sig-9", call.Signature);
+        Assert.EndsWith(":streamGenerateContent", _gemini.Paths.Single());
+        Assert.Equal("?alt=sse", _gemini.Queries.Single());
+    }
+
+    [Fact]
+    public async Task Stream_tries_the_next_model_before_anything_is_sent()
+    {
+        _gemini.Answer(HttpStatusCode.TooManyRequests, """{ "error": { "message": "Quota exceeded." } }""");
+        _gemini.Answer(HttpStatusCode.OK, Sse("""{ "candidates": [ { "content": { "parts": [ { "text": "Hi!" } ] } } ] }"""));
+
+        var chunks = await ReadAll(Client("backup-model").StreamAsync(Hello()));
+
+        Assert.Equal("Hi!", Assert.Single(chunks).Text);
+        Assert.Equal(["main-model", "backup-model"], _gemini.Models);
+    }
+
+    [Fact]
+    public async Task Stream_turns_an_error_event_into_an_LlmException()
+    {
+        _gemini.Answer(HttpStatusCode.OK, Sse(
+            """{ "candidates": [ { "content": { "parts": [ { "text": "Start" } ] } } ] }""",
+            """{ "error": { "message": "Internal error." } }"""));
+
+        var error = await Assert.ThrowsAsync<LlmException>(() => ReadAll(Client().StreamAsync(Hello())));
+
+        Assert.Contains("Internal error.", error.Message);
+    }
+
+    [Fact]
+    public async Task Stream_with_no_answer_at_all_is_an_error()
+    {
+        _gemini.Answer(HttpStatusCode.OK, Sse("""{ "candidates": [] }"""));
+
+        await Assert.ThrowsAsync<LlmException>(() => ReadAll(Client().StreamAsync(Hello())));
+    }
+
+    [Fact]
+    public async Task Stream_reports_unreadable_data_as_an_LlmException()
+    {
+        _gemini.Answer(HttpStatusCode.OK, "data: {not json\r\n\r\n");
+
+        await Assert.ThrowsAsync<LlmException>(() => ReadAll(Client().StreamAsync(Hello())));
+    }
+
     private sealed class FakeGemini : HttpMessageHandler
     {
         private readonly Queue<(HttpStatusCode Status, string Body)> _answers = new();
         public List<string> Models { get; } = [];
+        public List<string> Paths { get; } = [];
+        public List<string> Queries { get; } = [];
         public List<string> ApiKeys { get; } = [];
         public List<JsonElement> Bodies { get; } = [];
 
@@ -165,6 +237,8 @@ public class GeminiLlmClientTests
         {
             // ".../models/main-model:generateContent" -> "main-model"
             Models.Add(request.RequestUri!.Segments[^1].Split(':')[0]);
+            Paths.Add(request.RequestUri.AbsolutePath);
+            Queries.Add(request.RequestUri.Query);
             ApiKeys.Add(request.Headers.GetValues("x-goog-api-key").Single());
             Bodies.Add(JsonDocument.Parse(await request.Content!.ReadAsStringAsync(ct)).RootElement.Clone());
 

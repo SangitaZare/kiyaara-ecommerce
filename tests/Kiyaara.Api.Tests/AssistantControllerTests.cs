@@ -192,5 +192,110 @@ public class AssistantControllerTests : IDisposable
             if (_failure is not null) throw new LlmException(_failure);
             return Task.FromResult(_answers.Dequeue());
         }
+
+        // The scripted answer in pieces, the way a real stream arrives: text word by word, then the tool calls
+        public async IAsyncEnumerable<LlmStreamChunk> StreamAsync(LlmRequest request,
+            [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct = default)
+        {
+            var answer = await GenerateAsync(request, ct);
+            foreach (var word in SplitKeepingSpaces(answer.Text ?? ""))
+                yield return new LlmStreamChunk(Text: word);
+            foreach (var call in answer.ToolCalls)
+                yield return new LlmStreamChunk(ToolCall: call);
+        }
+
+        private static IEnumerable<string> SplitKeepingSpaces(string text) =>
+            System.Text.RegularExpressions.Regex.Matches(text, @"\S+\s*").Select(m => m.Value);
+    }
+
+    // ---------------- Streaming ----------------
+
+    private async Task<(int Status, List<JsonElement> Events)> Stream(ChatRequest request)
+    {
+        var body = new MemoryStream();
+        _controller.HttpContext.Response.Body = body;
+
+        var result = await _controller.ChatStream(request, default);
+        if (result is ObjectResult problem) return (problem.StatusCode ?? 400, []);
+
+        var events = System.Text.Encoding.UTF8.GetString(body.ToArray())
+            .Split("\n\n", StringSplitOptions.RemoveEmptyEntries)
+            .Select(e => { Assert.StartsWith("data: ", e); return JsonDocument.Parse(e[6..]).RootElement.Clone(); })
+            .ToList();
+        return (_controller.HttpContext.Response.StatusCode, events);
+    }
+
+    private static string TypeOf(JsonElement e) => e.GetProperty("type").GetString()!;
+
+    [Fact]
+    public async Task Stream_sends_status_then_the_answer_in_pieces_then_done_with_cards()
+    {
+        _llm.Script(
+            Calls(("search_products", """{ "q": "saree" }""")),
+            Text("Try the [Banarasi Silk Blend Saree](/product/2) for ₹3,299."));
+
+        var (status, events) = await Stream(Ask(("user", "Any sarees?")));
+
+        Assert.Equal(200, status);
+        Assert.Equal("text/event-stream", _controller.HttpContext.Response.ContentType);
+        Assert.Equal("status", TypeOf(events[0]));
+        Assert.Equal("Searching the catalogue…", events[0].GetProperty("text").GetString());
+
+        var deltas = events.Where(e => TypeOf(e) == "delta").Select(e => e.GetProperty("text").GetString()).ToList();
+        Assert.True(deltas.Count > 1, "the answer should arrive in several pieces");
+
+        var done = events[^1];
+        Assert.Equal("done", TypeOf(done));
+        Assert.Equal(string.Concat(deltas), done.GetProperty("reply").GetString());
+        Assert.Equal(2, done.GetProperty("products")[0].GetProperty("id").GetInt32());
+    }
+
+    [Fact]
+    public async Task Stream_joins_text_from_several_rounds_into_one_answer()
+    {
+        _llm.Script(
+            new LlmResponse("Let me check.", [Calls(("list_my_orders", "{}")).ToolCalls[0]]),
+            Text("Your order KY-1003 is packed."));
+
+        var (_, events) = await Stream(Ask(("user", "My orders?")));
+
+        var deltas = string.Concat(events.Where(e => TypeOf(e) == "delta").Select(e => e.GetProperty("text").GetString()));
+        Assert.Equal("Let me check.\n\nYour order KY-1003 is packed.", deltas);
+        Assert.Equal(deltas, events[^1].GetProperty("reply").GetString());
+    }
+
+    [Fact]
+    public async Task Stream_reports_failures_as_a_plain_error_event()
+    {
+        _llm.FailWith("Gemini returned 429. Quota exceeded, see billing at https://example.test");
+
+        var (status, events) = await Stream(Ask(("user", "Hi")));
+
+        Assert.Equal(200, status);                            // the stream had already started
+        var error = Assert.Single(events);
+        Assert.Equal("error", TypeOf(error));
+        Assert.DoesNotContain("billing", error.GetRawText());
+        Assert.DoesNotContain("429", error.GetRawText());
+    }
+
+    [Fact]
+    public async Task Stream_rejects_a_conversation_that_does_not_end_with_the_user()
+    {
+        var (status, events) = await Stream(Ask(("user", "Hi"), ("assistant", "Hello!")));
+
+        Assert.Equal(400, status);
+        Assert.Empty(events);
+        Assert.Empty(_llm.Requests);
+    }
+
+    [Fact]
+    public async Task Stream_and_chat_give_the_same_answer()
+    {
+        _llm.Script(Text("Hello from Kiyaara!"), Text("Hello from Kiyaara!"));
+
+        var (_, events) = await Stream(Ask(("user", "Hi")));
+        var whole = ReplyOf(await _controller.Chat(Ask(("user", "Hi")), default));
+
+        Assert.Equal(whole, events[^1].GetProperty("reply").GetString());
     }
 }

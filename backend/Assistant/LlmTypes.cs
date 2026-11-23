@@ -5,8 +5,16 @@ namespace Kiyaara.Api.Assistant;
 // The one door to any model. Gemini today, Claude or another provider later.
 public interface ILlmClient
 {
+    // The whole answer at once
     Task<LlmResponse> GenerateAsync(LlmRequest request, CancellationToken ct = default);
+
+    // The answer piece by piece as the model writes it: text in small parts, tool calls whole.
+    // Problems before or during the answer come out as LlmException.
+    IAsyncEnumerable<LlmStreamChunk> StreamAsync(LlmRequest request, CancellationToken ct = default);
 }
+
+// One piece of a streamed answer: either some new text or one complete tool call
+public record LlmStreamChunk(string? Text = null, LlmToolCall? ToolCall = null);
 
 public record LlmToolDefinition(string Name, string Description, object? Parameters = null);   // null = takes no input
 // Signature: an opaque token some providers attach to a call (Gemini's "thoughtSignature").

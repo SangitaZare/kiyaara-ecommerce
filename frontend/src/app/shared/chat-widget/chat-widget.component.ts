@@ -30,6 +30,7 @@ interface ThreadItem {
   text: string;
   blocks: Block[];
   products?: ProductCard[];
+  streaming?: boolean;
 }
 
 @Component({
@@ -88,7 +89,7 @@ interface ThreadItem {
             }
 
             @for (m of thread(); track $index) {
-              <div class="msg" [class.user]="m.role === 'user'">
+              <div class="msg" [class.user]="m.role === 'user'" [class.streaming]="m.streaming" [class.empty]="!m.text">
                 @if (m.role === 'user') {
                   <p>{{ m.text }}</p>
                 } @else {
@@ -126,8 +127,12 @@ interface ThreadItem {
               }
             }
 
-            @if (chat.sending()) {
+            <!-- Dots until the first words arrive; a status line while the assistant looks things up -->
+            @if (waiting()) {
               <div class="msg typing" aria-label="The assistant is typing"><span></span><span></span><span></span></div>
+            }
+            @if (chat.status(); as status) {
+              <div class="status" role="status">{{ status }}</div>
             }
 
             @if (chat.error(); as error) {
@@ -181,11 +186,18 @@ export class ChatWidgetComponent {
     }))
   );
 
+  // True from sending until the first words of the reply arrive
+  protected waiting = computed(() => {
+    const last = this.chat.messages().at(-1);
+    return this.chat.sending() && !last?.text;
+  });
+
   constructor() {
     // Keep the newest message in view
     afterRenderEffect(() => {
       this.thread();
       this.chat.sending();
+      this.chat.status();
       this.chat.error();
       const el = this.body()?.nativeElement;
       if (el) el.scrollTop = el.scrollHeight;
