@@ -53,7 +53,8 @@ public class AssistantController(ILlmClient llm, AssistantTools tools, ILogger<A
         public List<ChatMessage> Messages { get; set; } = new();
     }
 
-    public record ChatResponse(string Reply);
+    // Products: cards for the products the reply links to, so the chat can show photo and price
+    public record ChatResponse(string Reply, List<ProductCard> Products);
 
     // POST api/assistant/chat   body: { "messages": [ { "role": "user", "text": "cotton kurtas under 1500?" } ] }
     [HttpPost("chat")]
@@ -87,7 +88,7 @@ public class AssistantController(ILlmClient llm, AssistantTools tools, ILogger<A
                     var reply = string.IsNullOrWhiteSpace(response.Text)
                         ? "Sorry, I couldn't come up with an answer. Could you ask that another way?"
                         : response.Text.Trim();
-                    return Ok(new ChatResponse(reply));
+                    return Ok(new ChatResponse(reply, await tools.CardsForReplyAsync(reply, ct)));
                 }
 
                 // The model asked for data: remember what it asked, run each tool, hand the results back
@@ -106,7 +107,7 @@ public class AssistantController(ILlmClient llm, AssistantTools tools, ILogger<A
             }
 
             // Unreachable in practice: the final round offers no tools
-            return Ok(new ChatResponse("Sorry, that took too many steps. Could you ask something simpler?"));
+            return Ok(new ChatResponse("Sorry, that took too many steps. Could you ask something simpler?", []));
         }
         catch (LlmException ex)
         {
