@@ -5,6 +5,8 @@ import { catchError, throwError } from 'rxjs';
 import { API_BASE_URL } from '../api.config';
 import { AuthService } from '../services/auth.service';
 
+const SIGN_IN_CALLS = ['login', 'register', 'forgot-password', 'reset-password'];
+
 // Runs for EVERY HttpClient request. It adds "Authorization: Bearer <token>" when you are
 // logged in, so no service has to remember to do it.
 export const authInterceptor: HttpInterceptorFn = (request, next) => {
@@ -14,7 +16,8 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
 
   // NEW (4C): the sign-in calls (login, register, forgot and reset password) never send a token.
   // So a wrong password on the admin sign-in page can't log out whoever is already logged in.
-  const isSignInCall = request.url.startsWith(`${API_BASE_URL}/auth/`) && !request.url.endsWith('/auth/me');
+  // Only those four: the other /auth/ calls (me, change-password) need the token.
+  const isSignInCall = SIGN_IN_CALLS.some(path => request.url === `${API_BASE_URL}/auth/${path}`);
 
   // Only our own API gets the token, never another website
   const sent = token && !isSignInCall && request.url.startsWith(API_BASE_URL)
