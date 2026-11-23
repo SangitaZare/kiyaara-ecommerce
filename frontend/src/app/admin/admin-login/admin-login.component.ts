@@ -9,8 +9,8 @@ import { AuthService, safeReturnUrl } from '../../services/auth.service';
   selector: 'app-admin-login',
   standalone: true,
   imports: [ReactiveFormsModule, RouterLink, MatIconModule],
-  templateUrl: './admin-login.components.html',
-  styleUrl: './admin-login.components.css'
+  templateUrl: './admin-login.component.html',
+  styleUrl: './admin-login.component.css'
 })
 export class AdminLoginComponent {
   private fb = inject(FormBuilder);

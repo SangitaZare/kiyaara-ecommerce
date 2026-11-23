@@ -1,4 +1,4 @@
-using Kiyaara.Api.Data;
+﻿using Kiyaara.Api.Data;
 using Kiyaara.Api.Middleware;
 using Kiyaara.Api.Models;
 using Kiyaara.Api.Services;
@@ -189,19 +189,7 @@ using (var scope = app.Services.CreateScope())
 // 1. Custom request logging - first, so it sees every request
 app.UseRequestLogging();
 
-// 2. Short-circuit middleware - blocks /api/admin
-app.Use(async (context, next) =>
-{
-    if (context.Request.Path.StartsWithSegments("/api/admin"))
-    {
-        context.Response.StatusCode = StatusCodes.Status403Forbidden;
-        await context.Response.WriteAsync("Admin area is blocked");
-        return;
-    }
-    await next(context);
-});
-
-// 3. OpenAPI document + Swagger UI (Development only)
+// 2. OpenAPI document + Swagger UI (Development only)
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -219,13 +207,13 @@ app.UseStaticFiles(new StaticFileOptions
     RequestPath = "/uploads"
 });
 
-// 4. CORS - before authentication, so even a 401 answer reaches Angular
+// 3. CORS - before authentication, so even a 401 answer reaches Angular
 app.UseCors(AngularPolicy);
 
-// 5. Read the token (who is calling?), then check [Authorize] (are they allowed?)
+// 4. Read the token (who is calling?), then check [Authorize] (are they allowed?)
 app.UseAuthentication();
 
-// 6. Rate limits - after authentication, so the "assistant" limit can count per user
+// 5. Rate limits - after authentication, so the "assistant" limit can count per user
 app.UseRateLimiter();
 app.UseAuthorization();
 

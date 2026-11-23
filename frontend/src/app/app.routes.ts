@@ -85,7 +85,7 @@ export const routes: Routes = [
     path: 'admin/login',
     title: 'Sign in | Kiyaara Admin',
     canActivate: [adminLoginGuard],
-    loadComponent: () => import('./admin/admin-login/admin-login.components').then(m => m.AdminLoginComponent)
+    loadComponent: () => import('./admin/admin-login/admin-login.component').then(m => m.AdminLoginComponent)
   },
   {
     path: 'staff-only',
