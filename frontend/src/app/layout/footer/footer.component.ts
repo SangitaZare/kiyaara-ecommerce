@@ -1,5 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { StoreService } from '../../services/store.service';
+import { inr } from '../../shared/product-utils';
 
 @Component({
   selector: 'app-footer',
@@ -24,7 +26,7 @@ import { RouterLink } from '@angular/router';
         <div>
           <h3>Customer care</h3>
           <div class="links">
-            <span>Free delivery above &#8377;999</span>
+            <span>Free delivery above {{ inr(store.freeDeliveryFrom()) }}</span>
             <span>Easy 15-day returns</span>
             <span>Pay on delivery</span>
           </div>
@@ -51,4 +53,7 @@ import { RouterLink } from '@angular/router';
     @media (max-width: 700px) { .cols { grid-template-columns: 1fr; } }
   `]
 })
-export class FooterComponent {}
+export class FooterComponent {
+  store = inject(StoreService);
+  readonly inr = inr;
+}

@@ -1,5 +1,7 @@
-import { Component, input } from '@angular/core';
+import { Component, inject, input } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
+import { StoreService } from '../../../services/store.service';
+import { inr } from '../../../shared/product-utils';
 
 // The calm brand panel beside the login forms (no photos).
 // <app-auth-panel variant="login" />  deep peacock, for log in, forgot and reset password
@@ -62,7 +64,7 @@ import { MatIconModule } from '@angular/material/icon';
       }
 
       <div class="promises">
-        <span>Free delivery above &#8377;999</span>
+        <span>Free delivery above {{ inr(store.freeDeliveryFrom()) }}</span>
         <span>Easy 15-day returns</span>
         <span>Pay on delivery</span>
       </div>
@@ -152,6 +154,8 @@ import { MatIconModule } from '@angular/material/icon';
 })
 export class AuthPanelComponent {
   variant = input<'login' | 'join'>('login');
+  store = inject(StoreService);
+  readonly inr = inr;
 
   readonly loginPerks = [
     { icon: 'local_shipping', title: 'Track every order', text: 'See each order move from placed to delivered.' },

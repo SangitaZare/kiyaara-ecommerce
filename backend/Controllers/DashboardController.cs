@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Kiyaara.Api.Controllers;
 
-// Lives at /api/dashboard, not /api/admin: the Day 17 short-circuit middleware blocks /api/admin.
+// The admin dashboard's numbers, at /api/dashboard.
 [ApiController]
 [Route("api/[controller]")]
 [Authorize(Roles = UserRoles.Admin)]                     // NEW (4C): every endpoint here is admins only

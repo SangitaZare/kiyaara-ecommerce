@@ -7,7 +7,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { ProductService } from '../../services/product.service';
 import { Product } from '../../models/product.model';
 import { ProductCardComponent } from '../../shared/product-card/product-card.component';
-import { imageOf } from '../../shared/product-utils';
+import { imageOf, inr } from '../../shared/product-utils';
+import { StoreService } from '../../services/store.service';
 
 @Component({
   selector: 'app-home',
@@ -18,6 +19,8 @@ import { imageOf } from '../../shared/product-utils';
 })
 export class HomeComponent {
   private productService = inject(ProductService);
+  store = inject(StoreService);
+  readonly inr = inr;
   readonly imageOf = imageOf;
 
   loadError = signal(false);

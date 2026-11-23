@@ -5,6 +5,8 @@ import { MatBadgeModule } from '@angular/material/badge';
 import { CartService } from '../../services/cart.service';
 import { WishlistService } from '../../services/wishlist.service';
 import { AuthService } from '../../services/auth.service';
+import { StoreService } from '../../services/store.service';
+import { inr } from '../../shared/product-utils';
 
 @Component({
   selector: 'app-header',
@@ -16,7 +18,7 @@ import { AuthService } from '../../services/auth.service';
     '(document:keydown.escape)': 'closeMenu()'
   },
   template: `
-    <div class="strip">Free delivery on orders above &#8377;999. Easy 15-day returns.</div>
+    <div class="strip">Free delivery on orders above {{ inr(store.freeDeliveryFrom()) }}. Easy 15-day returns.</div>
 
     <div class="bar">
       <div class="container bar-inner">
@@ -172,6 +174,8 @@ export class HeaderComponent {
   cart = inject(CartService);
   wishlist = inject(WishlistService);
   auth = inject(AuthService);
+  store = inject(StoreService);
+  readonly inr = inr;
 
   menuOpen = signal(false);
 

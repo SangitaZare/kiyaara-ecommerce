@@ -71,7 +71,7 @@
 <section class="container perks">
   <div class="perk">
     <mat-icon>local_shipping</mat-icon>
-    <div><strong>Free delivery</strong><span>On orders above &#8377;999</span></div>
+    <div><strong>Free delivery</strong><span>On orders above {{ inr(store.freeDeliveryFrom()) }}</span></div>
   </div>
   <div class="perk">
     <mat-icon>assignment_return</mat-icon>

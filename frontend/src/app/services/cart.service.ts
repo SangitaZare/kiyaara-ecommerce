@@ -1,5 +1,6 @@
-import { Injectable, computed, effect, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { Product } from '../models/product.model';
+import { StoreService } from './store.service';
 
 export interface CartItem {
   product: Product;
@@ -7,13 +8,14 @@ export interface CartItem {
   quantity: number;
 }
 
-export const FREE_DELIVERY_FROM = 999;
-export const DELIVERY_FEE = 79;
 export const MAX_QUANTITY = 5;
 
 @Injectable({ providedIn: 'root' })
 export class CartService {
   private readonly storageKey = 'kiyaara-bag';
+  private store = inject(StoreService);         // the delivery rule, read from the API
+
+  readonly freeDeliveryFrom = this.store.freeDeliveryFrom;
 
   items = signal<CartItem[]>(this.load());
 
@@ -22,10 +24,10 @@ export class CartService {
   mrpTotal = computed(() => this.items().reduce((sum, i) => sum + i.product.mrp * i.quantity, 0));
   subtotal = computed(() => this.items().reduce((sum, i) => sum + i.product.price * i.quantity, 0));
   discount = computed(() => this.mrpTotal() - this.subtotal());
-  freeDelivery = computed(() => this.subtotal() >= FREE_DELIVERY_FROM);
-  deliveryFee = computed(() => (this.items().length === 0 || this.freeDelivery() ? 0 : DELIVERY_FEE));
+  freeDelivery = computed(() => this.subtotal() >= this.freeDeliveryFrom());
+  deliveryFee = computed(() => (this.items().length === 0 || this.freeDelivery() ? 0 : this.store.deliveryFee()));
   total = computed(() => this.subtotal() + this.deliveryFee());
-  amountForFreeDelivery = computed(() => Math.max(FREE_DELIVERY_FROM - this.subtotal(), 0));
+  amountForFreeDelivery = computed(() => Math.max(this.freeDeliveryFrom() - this.subtotal(), 0));
 
   constructor() {
     // Save the bag whenever it changes, so it survives a refresh
