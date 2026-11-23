@@ -1,7 +1,11 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Kiyaara.Api.Assistant;
 using Kiyaara.Api.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
@@ -57,15 +61,104 @@ public class AssistantController(ILlmClient llm, AssistantTools tools, ILogger<A
     public record ChatResponse(string Reply, List<ProductCard> Products);
 
     // POST api/assistant/chat   body: { "messages": [ { "role": "user", "text": "cotton kurtas under 1500?" } ] }
+    // The whole answer at once.
     [HttpPost("chat")]
     public async Task<ActionResult<ChatResponse>> Chat(ChatRequest request, CancellationToken ct)
     {
-        if (request.Messages[^1].Role != "user")
+        if (!IsValid(request)) return ValidationProblem(ModelState);
+
+        try
         {
-            ModelState.AddModelError(nameof(request.Messages), "The last message must be from the user.");
-            return ValidationProblem(ModelState);
+            var reply = await RunConversationAsync(request, _ => Task.CompletedTask, ct);
+            return Ok(new ChatResponse(reply, await tools.CardsForReplyAsync(reply, ct)));
+        }
+        catch (LlmException ex)
+        {
+            // The full reason (quota, billing links, model names) stays in the server log;
+            // the browser only gets a plain message
+            logger.LogWarning("Assistant failed: {Message}", ex.Message);
+            return StatusCode(StatusCodes.Status502BadGateway, new { error = Unavailable });
+        }
+    }
+
+    // POST api/assistant/chat/stream   same body as /chat
+    // The answer as Server-Sent Events, one "data: {json}" line per event:
+    //   { "type": "status", "text": "Searching the catalogue…" }   while a tool runs
+    //   { "type": "delta",  "text": "Here are" }                    each new piece of the answer
+    //   { "type": "done",   "reply": "...", "products": [...] }     the full answer and its product cards
+    //   { "type": "error",  "message": "..." }                       something went wrong; nothing more follows
+    [HttpPost("chat/stream")]
+    public async Task<IActionResult> ChatStream(ChatRequest request, CancellationToken ct)
+    {
+        if (!IsValid(request)) return ValidationProblem(ModelState);
+
+        Response.ContentType = "text/event-stream";
+        Response.Headers.CacheControl = "no-cache";
+        Response.Headers["X-Accel-Buffering"] = "no";                 // tell proxies not to hold the stream back
+        HttpContext.Features.Get<IHttpResponseBodyFeature>()?.DisableBuffering();
+
+        try
+        {
+            var reply = await RunConversationAsync(request, e => SendEventAsync(e, ct), ct);
+            await SendEventAsync(new ChatEvent("done", Reply: reply, Products: await tools.CardsForReplyAsync(reply, ct)), ct);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            // The customer closed the chat or the page: nobody is listening any more
+        }
+        catch (LlmException ex)
+        {
+            logger.LogWarning("Assistant failed: {Message}", ex.Message);
+            await SendEventAsync(new ChatEvent("error", Message: Unavailable), CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            // The stream has started, so the status code can't change any more: report it as an event
+            logger.LogError(ex, "Assistant stream failed");
+            await SendEventAsync(new ChatEvent("error", Message: Unavailable), CancellationToken.None);
         }
 
+        return new EmptyResult();
+    }
+
+    // One Server-Sent Event for the chat window. Only the fields of its type are filled in.
+    public record ChatEvent(string Type, string? Text = null, string? Reply = null,
+        List<ProductCard>? Products = null, string? Message = null);
+
+    private const string Unavailable = "The assistant is not available right now. Please try again in a little while.";
+
+    private static readonly JsonSerializerOptions EventJson = new(JsonSerializerDefaults.Web)
+    {
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+    };
+
+    private async Task SendEventAsync(ChatEvent e, CancellationToken ct)
+    {
+        await Response.WriteAsync($"data: {JsonSerializer.Serialize(e, EventJson)}\n\n", ct);
+        await Response.Body.FlushAsync(ct);
+    }
+
+    private bool IsValid(ChatRequest request)
+    {
+        if (request.Messages[^1].Role == "user") return true;
+        ModelState.AddModelError(nameof(request.Messages), "The last message must be from the user.");
+        return false;
+    }
+
+    // What the chat shows while each tool runs
+    private static string StatusFor(string tool) => tool switch
+    {
+        AssistantTools.SearchProducts => "Searching the catalogue…",
+        AssistantTools.GetProduct => "Checking product details…",
+        AssistantTools.ListMyOrders or AssistantTools.GetMyOrder => "Looking up your orders…",
+        _ => "Looking that up…"
+    };
+
+    // The model and the tools take turns until the model answers in words. Every piece of text is
+    // passed to onEvent as it arrives ("delta"), and each tool run is announced first ("status").
+    // Returns the whole answer: the text of every round, in order.
+    private async Task<string> RunConversationAsync(ChatRequest request, Func<ChatEvent, Task> onEvent, CancellationToken ct)
+    {
         // Only user and assistant text comes from the browser; tool turns are made here, never sent in.
         var conversation = request.Messages
             .TakeLast(MaxMessages)
@@ -74,48 +167,54 @@ public class AssistantController(ILlmClient llm, AssistantTools tools, ILogger<A
             .ToList();
 
         var customerId = User.CustomerId();
+        var answer = new StringBuilder();
 
-        try
+        for (var round = 0; round <= MaxToolRounds; round++)
         {
-            for (var round = 0; round <= MaxToolRounds; round++)
+            // On the last round the tools are taken away, so the model has to answer with what it has
+            var offerTools = round < MaxToolRounds ? AssistantTools.Definitions : null;
+            var roundText = new StringBuilder();
+            var calls = new List<LlmToolCall>();
+
+            await foreach (var chunk in llm.StreamAsync(new LlmRequest(SystemPrompt, conversation, offerTools), ct))
             {
-                // On the last round the tools are taken away, so the model has to answer with what it has
-                var offerTools = round < MaxToolRounds ? AssistantTools.Definitions : null;
-                var response = await llm.GenerateAsync(new LlmRequest(SystemPrompt, conversation, offerTools), ct);
+                if (chunk.ToolCall is not null) calls.Add(chunk.ToolCall);
+                if (string.IsNullOrEmpty(chunk.Text)) continue;
 
-                if (response.ToolCalls.Count == 0)
-                {
-                    var reply = string.IsNullOrWhiteSpace(response.Text)
-                        ? "Sorry, I couldn't come up with an answer. Could you ask that another way?"
-                        : response.Text.Trim();
-                    return Ok(new ChatResponse(reply, await tools.CardsForReplyAsync(reply, ct)));
-                }
-
-                // The model asked for data: remember what it asked, run each tool, hand the results back
-                conversation.Add(new LlmMessage { Role = "assistant", Text = response.Text, ToolCalls = response.ToolCalls });
-
-                foreach (var call in response.ToolCalls)
-                {
-                    logger.LogInformation("Assistant tool {Tool} {Args}", call.Name, call.Args.GetRawText());
-                    conversation.Add(new LlmMessage
-                    {
-                        Role = "tool",
-                        ToolName = call.Name,
-                        ToolResultJson = await tools.ExecuteAsync(call, customerId, ct)
-                    });
-                }
+                // A new round's words start a new paragraph after the last round's
+                var piece = roundText.Length == 0 && answer.Length > 0 ? "\n\n" + chunk.Text : chunk.Text;
+                roundText.Append(chunk.Text);
+                answer.Append(piece);
+                await onEvent(new ChatEvent("delta", Text: piece));
             }
 
-            // Unreachable in practice: the final round offers no tools
-            return Ok(new ChatResponse("Sorry, that took too many steps. Could you ask something simpler?", []));
+            if (calls.Count == 0) break;
+
+            // The model asked for data: remember what it asked, run each tool, hand the results back
+            conversation.Add(new LlmMessage
+            {
+                Role = "assistant",
+                Text = roundText.Length > 0 ? roundText.ToString() : null,
+                ToolCalls = calls
+            });
+
+            foreach (var call in calls)
+            {
+                logger.LogInformation("Assistant tool {Tool} {Args}", call.Name, call.Args.GetRawText());
+                await onEvent(new ChatEvent("status", Text: StatusFor(call.Name)));
+                conversation.Add(new LlmMessage
+                {
+                    Role = "tool",
+                    ToolName = call.Name,
+                    ToolResultJson = await tools.ExecuteAsync(call, customerId, ct)
+                });
+            }
         }
-        catch (LlmException ex)
-        {
-            // The full reason (quota, billing links, model names) stays in the server log;
-            // the browser only gets a plain message
-            logger.LogWarning("Assistant failed: {Message}", ex.Message);
-            return StatusCode(StatusCodes.Status502BadGateway,
-                new { error = "The assistant is not available right now. Please try again in a little while." });
-        }
+
+        if (answer.Length > 0) return answer.ToString().Trim();
+
+        const string fallback = "Sorry, I couldn't come up with an answer. Could you ask that another way?";
+        await onEvent(new ChatEvent("delta", Text: fallback));
+        return fallback;
     }
 }
