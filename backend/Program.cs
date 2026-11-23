@@ -46,6 +46,7 @@ builder.Services.AddDbContext<KiyaaraDbContext>(options =>
 var jwt = builder.Configuration.GetSection("Jwt").Get<JwtSettings>() ?? new JwtSettings();
 if (jwt.Key.Length < 32)
     throw new InvalidOperationException("Jwt:Key in appsettings.json must be at least 32 characters long.");
+JwtKeyGuard.EnsurePrivateKey(builder.Configuration, builder.Environment);   // outside Development: not the key in the repo
 
 builder.Services.AddSingleton(jwt);
 builder.Services.AddScoped<TokenService>();

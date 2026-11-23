@@ -22,8 +22,9 @@ public class DashboardController : ControllerBase
     [HttpGet("summary")]
     public async Task<ActionResult<DashboardSummary>> GetSummary()
     {
-        // "Today" on this computer's clock (India time on your laptop), as a UTC range for SQL
-        var startUtc = DateTime.Today.ToUniversalTime();
+        // "Today" in India, as a UTC range for SQL. Not DateTime.Today: on a cloud server running in UTC
+        // that would start the day at 5:30 AM India time and count late-night orders on the wrong day.
+        var startUtc = TodayInIndia.StartUtc();
         var endUtc = startUtc.AddDays(1);
 
         var todaysTotals = await _db.Orders
@@ -52,13 +53,16 @@ public class DashboardController : ControllerBase
 
         return Ok(summary);
     }
+    // Midnight in India (UTC+5:30, no daylight saving) as a UTC time, whatever the server's own time zone
     public static class TodayInIndia
     {
         private static readonly TimeSpan Ist = TimeSpan.FromHours(5.5);
 
-        public static DateTime StartUtc()
+        public static DateTime StartUtc() => StartUtc(DateTime.UtcNow);
+
+        public static DateTime StartUtc(DateTime utcNow)
         {
-            var nowInIndia = DateTime.UtcNow + Ist;
+            var nowInIndia = utcNow + Ist;
             return DateTime.SpecifyKind(nowInIndia.Date - Ist, DateTimeKind.Utc);
         }
     }

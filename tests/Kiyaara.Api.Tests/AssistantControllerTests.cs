@@ -103,6 +103,16 @@ public class AssistantControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task Tells_the_model_the_same_delivery_rule_checkout_charges()
+    {
+        _llm.Script(Text("Delivery is free from ₹999."));
+
+        await _controller.Chat(Ask(("user", "Is delivery free?")), default);
+
+        Assert.Contains(Models.DeliveryRules.Describe(), _llm.Requests[0].SystemPrompt);
+    }
+
+    [Fact]
     public async Task Rejects_a_conversation_that_does_not_end_with_the_user()
     {
         var result = await _controller.Chat(Ask(("user", "Hi"), ("assistant", "Hello!")), default);

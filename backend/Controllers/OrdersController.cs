@@ -11,9 +11,6 @@ namespace Kiyaara.Api.Controllers;
 [Route("api/[controller]")]
 public class OrdersController : ControllerBase
 {
-    private const decimal FreeDeliveryFrom = 999m;
-    private const decimal DeliveryFee = 79m;
-
     private readonly KiyaaraDbContext _db;
     private readonly OrderNotifier _notifier;
 
@@ -117,7 +114,7 @@ public class OrdersController : ControllerBase
 
         // 6. Work out the totals
         var subtotal = items.Sum(i => i.Price * i.Quantity);
-        var deliveryFee = subtotal >= FreeDeliveryFrom ? 0m : DeliveryFee;
+        var deliveryFee = DeliveryRules.FeeFor(subtotal);           // the same rule the assistant describes
         var now = DateTime.UtcNow;
 
         var order = new Order                  // no Id: SQL Server numbers it (1001, 1002...)
