@@ -14,3 +14,7 @@
 @if (!fullPage() && !checkoutStep()) {
   <app-footer />
 }
+<!-- The shopping assistant, on every store page (not on admin or login screens) -->
+@if (!fullPage()) {
+  <app-chat-widget />
+}
