@@ -5,13 +5,14 @@ import { filter, map } from 'rxjs';
 import { HeaderComponent } from './layout/header/header.component';
 import { FooterComponent } from './layout/footer/footer.component';
 import { CheckoutHeaderComponent } from './layout/checkout-header/checkout-header.component';
+import { ChatWidgetComponent } from './shared/chat-widget/chat-widget.component';
 
 // NEW (4B): full-page screens with their own logo, so the store header and footer step aside
 const AUTH_PAGES = ['/login', '/register', '/forgot-password', '/reset-password'];
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, HeaderComponent, FooterComponent, CheckoutHeaderComponent],
+  imports: [RouterOutlet, HeaderComponent, FooterComponent, CheckoutHeaderComponent, ChatWidgetComponent],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
