@@ -51,7 +51,7 @@ public class OrderNotifier(
                     var items = string.Join("\n", order.Items.Select(i =>
                         $"  - {i.Name} ({(string.IsNullOrEmpty(i.Size) ? "one size" : "size " + i.Size)}) x {i.Quantity}: ₹{(i.Price * i.Quantity).ToString("N0", India)}"));
                     var a = order.Address;
-                    var payment = order.PaymentMethod == "COD" ? "Cash on delivery. Pay when it arrives." : "Paid by UPI.";
+                    var payment = order.PaymentMethod == "COD" ? "Cash on delivery. Pay when it arrives." : "UPI (demo). No payment has been taken.";   // no payment gateway yet
 
                     return ($"Order {number} is confirmed",
                         $"Hi {firstName},\n\nThank you! We've received your order {number}.\n\n" +

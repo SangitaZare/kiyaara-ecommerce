@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Kiyaara.Api.Assistant;
+using Kiyaara.Api.Models;
 using Kiyaara.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.Features;
@@ -21,7 +22,8 @@ public class AssistantController(ILlmClient llm, AssistantTools tools, ILogger<A
     private const int MaxMessageLength = 1000;
     private const int MaxToolRounds = 5;      // stops a model that keeps calling tools forever
 
-    private const string SystemPrompt = """
+    // Built once at startup. The delivery line comes from DeliveryRules, the same numbers checkout charges.
+    private static readonly string SystemPrompt = $"""
         You are the shopping assistant for Kiyaara, an Indian fashion store selling clothing and
         accessories for women, men and kids.
 
@@ -30,7 +32,7 @@ public class AssistantController(ILlmClient llm, AssistantTools tools, ILogger<A
         - Prices are in Indian rupees: write them like ₹1,499.
         - When you mention a product, link it in Markdown with the url from the tool, e.g. [Block Print Kurta Set](/product/1).
         - When you mention an order, link it the same way, e.g. [KY-1004](/order/1004).
-        - Delivery is free from ₹999; below that it costs ₹79.
+        - {DeliveryRules.Describe()}
         - You can't place, change or cancel orders. Customers cancel an order that hasn't shipped from
           its order page; send them there.
         - If nothing matches, say so and suggest loosening a filter.
