@@ -16,11 +16,16 @@ namespace Kiyaara.Api.Controllers;
 [Route("api/[controller]")]
 [Authorize]                                   // logged-in users only, so strangers can't use your quota
 [EnableRateLimiting("assistant")]             // 10 messages a minute per account (Program.cs)
-public class AssistantController(ILlmClient llm, AssistantTools tools, ILogger<AssistantController> logger) : ControllerBase
+public class AssistantController(ILlmClient llm, AssistantTools tools, ILogger<AssistantController> logger,
+    IConfiguration config) : ControllerBase
 {
     private const int MaxMessages = 20;       // older turns are dropped, so long chats stay cheap
     private const int MaxMessageLength = 1000;
     private const int MaxToolRounds = 5;      // stops a model that keeps calling tools forever
+
+    // The most one question may take in total: every model, backup model and tool together.
+    // Each model already has its own limit; this one stops several slow models adding up.
+    private TimeSpan TimeLimit => TimeSpan.FromSeconds(config.GetValue("Assistant:TimeLimitSeconds", 60.0));
 
     // Built once at startup. The delivery line comes from DeliveryRules, the same numbers checkout charges.
     private static readonly string SystemPrompt = $"""
@@ -69,10 +74,18 @@ public class AssistantController(ILlmClient llm, AssistantTools tools, ILogger<A
     {
         if (!IsValid(request)) return ValidationProblem(ModelState);
 
+        using var limit = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        limit.CancelAfter(TimeLimit);
+
         try
         {
-            var reply = await RunConversationAsync(request, _ => Task.CompletedTask, ct);
-            return Ok(new ChatResponse(reply, await tools.CardsForReplyAsync(reply, ct)));
+            var reply = await RunConversationAsync(request, _ => Task.CompletedTask, limit.Token);
+            return Ok(new ChatResponse(reply, await tools.CardsForReplyAsync(reply, limit.Token)));
+        }
+        catch (OperationCanceledException) when (limit.IsCancellationRequested && !ct.IsCancellationRequested)
+        {
+            logger.LogWarning("Assistant gave up after {Seconds}s", TimeLimit.TotalSeconds);
+            return StatusCode(StatusCodes.Status504GatewayTimeout, new { error = TooSlow });
         }
         catch (LlmException ex)
         {
@@ -99,14 +112,22 @@ public class AssistantController(ILlmClient llm, AssistantTools tools, ILogger<A
         Response.Headers["X-Accel-Buffering"] = "no";                 // tell proxies not to hold the stream back
         HttpContext.Features.Get<IHttpResponseBodyFeature>()?.DisableBuffering();
 
+        using var limit = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        limit.CancelAfter(TimeLimit);
+
         try
         {
-            var reply = await RunConversationAsync(request, e => SendEventAsync(e, ct), ct);
-            await SendEventAsync(new ChatEvent("done", Reply: reply, Products: await tools.CardsForReplyAsync(reply, ct)), ct);
+            var reply = await RunConversationAsync(request, e => SendEventAsync(e, ct), limit.Token);
+            await SendEventAsync(new ChatEvent("done", Reply: reply, Products: await tools.CardsForReplyAsync(reply, limit.Token)), ct);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
             // The customer closed the chat or the page: nobody is listening any more
+        }
+        catch (OperationCanceledException) when (limit.IsCancellationRequested)
+        {
+            logger.LogWarning("Assistant gave up after {Seconds}s", TimeLimit.TotalSeconds);
+            await SendEventAsync(new ChatEvent("error", Message: TooSlow), CancellationToken.None);
         }
         catch (LlmException ex)
         {
@@ -128,6 +149,7 @@ public class AssistantController(ILlmClient llm, AssistantTools tools, ILogger<A
         List<ProductCard>? Products = null, string? Message = null);
 
     private const string Unavailable = "The assistant is not available right now. Please try again in a little while.";
+    private const string TooSlow = "That took too long to answer. Please try again, or ask a simpler question.";
 
     private static readonly JsonSerializerOptions EventJson = new(JsonSerializerDefaults.Web)
     {

@@ -5,6 +5,7 @@ using Kiyaara.Api.Controllers;
 using Kiyaara.Api.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using static Kiyaara.Api.Controllers.AssistantController;
 
@@ -15,12 +16,15 @@ public class AssistantControllerTests : IDisposable
 {
     private readonly TestDatabase _data = new();
     private readonly FakeLlm _llm = new();
+    private readonly IConfigurationRoot _config = new ConfigurationBuilder()
+        .AddInMemoryCollection(new Dictionary<string, string?> { ["Assistant:TimeLimitSeconds"] = "60" })
+        .Build();
     private readonly AssistantController _controller;
 
     public AssistantControllerTests()
     {
         var tools = new AssistantTools(_data.Db, new ProductSearchService(_data.Db));
-        _controller = new AssistantController(_llm, tools, NullLogger<AssistantController>.Instance)
+        _controller = new AssistantController(_llm, tools, NullLogger<AssistantController>.Instance, _config)
         {
             ControllerContext = new ControllerContext
             {
@@ -195,12 +199,15 @@ public class AssistantControllerTests : IDisposable
 
         public void FailWith(string message) => _failure = message;
 
-        public Task<LlmResponse> GenerateAsync(LlmRequest request, CancellationToken ct = default)
+        public TimeSpan Delay { get; set; }           // how long each answer takes
+
+        public async Task<LlmResponse> GenerateAsync(LlmRequest request, CancellationToken ct = default)
         {
             // Copy the messages: the controller keeps adding to the same list
             Requests.Add(request with { Messages = request.Messages.ToList() });
+            if (Delay > TimeSpan.Zero) await Task.Delay(Delay, ct);
             if (_failure is not null) throw new LlmException(_failure);
-            return Task.FromResult(_answers.Dequeue());
+            return _answers.Dequeue();
         }
 
         // The scripted answer in pieces, the way a real stream arrives: text word by word, then the tool calls
@@ -296,6 +303,49 @@ public class AssistantControllerTests : IDisposable
         Assert.Equal(400, status);
         Assert.Empty(events);
         Assert.Empty(_llm.Requests);
+    }
+
+    // ---------------- Total time limit ----------------
+
+    [Fact]
+    public async Task Chat_gives_up_with_504_when_the_question_takes_too_long()
+    {
+        _config["Assistant:TimeLimitSeconds"] = "0.3";
+        _llm.Delay = TimeSpan.FromSeconds(0.2);            // each model answer is quick on its own...
+        _llm.Script(Enumerable.Repeat(Calls(("list_my_orders", "{}")), 5).Append(Text("Done")).ToArray());
+
+        var started = DateTime.UtcNow;
+        var result = await _controller.Chat(Ask(("user", "Orders?")), default);
+
+        var error = Assert.IsType<ObjectResult>(result.Result);
+        Assert.Equal(StatusCodes.Status504GatewayTimeout, error.StatusCode);
+        Assert.Contains("took too long", JsonSerializer.Serialize(error.Value));
+        Assert.True(DateTime.UtcNow - started < TimeSpan.FromSeconds(2), "...but together they must be cut off");
+    }
+
+    [Fact]
+    public async Task Stream_reports_the_time_limit_as_an_error_event()
+    {
+        _config["Assistant:TimeLimitSeconds"] = "0.3";
+        _llm.Delay = TimeSpan.FromSeconds(1);
+        _llm.Script(Text("Too late"));
+
+        var (status, events) = await Stream(Ask(("user", "Hi")));
+
+        Assert.Equal(200, status);
+        var error = Assert.Single(events);
+        Assert.Equal("error", TypeOf(error));
+        Assert.Contains("took too long", error.GetProperty("message").GetString());
+    }
+
+    [Fact]
+    public async Task Answers_within_the_limit_are_unaffected()
+    {
+        _config["Assistant:TimeLimitSeconds"] = "5";
+        _llm.Delay = TimeSpan.FromMilliseconds(50);
+        _llm.Script(Text("Quick answer"));
+
+        Assert.Equal("Quick answer", ReplyOf(await _controller.Chat(Ask(("user", "Hi")), default)));
     }
 
     [Fact]

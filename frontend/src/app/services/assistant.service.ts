@@ -148,6 +148,7 @@ function describe(err: HttpErrorResponse): string {
   if (err.status === 401) return 'Your login has ended. Please log in again to chat.';
   if (err.status === 429) return errorText(err.error) ?? 'You are sending messages quickly. Wait a moment and try again.';
   if (err.status === 400) return 'That message could not be sent. Try a shorter one.';
+  if (err.status === 504) return errorText(err.error) ?? 'That took too long to answer. Please try again.';
   return 'The assistant is not available right now. Please try again in a little while.';
 }
 
