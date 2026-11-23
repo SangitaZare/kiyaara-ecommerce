@@ -25,6 +25,7 @@ public static class CustomerClaims
     public const string Email = "email";
     public const string Name = "name";
     public const string Role = "role";                   // NEW (4C): "Customer" or "Admin"
+    public const string Version = "ver";                 // the account's TokenVersion when the token was made
 
     // The logged-in customer's id, read from the token. 0 means "no customer".
     public static int CustomerId(this ClaimsPrincipal user) =>
@@ -51,7 +52,8 @@ public class TokenService(JwtSettings settings)
                 new Claim(CustomerClaims.Id, customer.Id.ToString()),
                 new Claim(CustomerClaims.Email, customer.Email),
                 new Claim(CustomerClaims.Name, customer.FullName),
-                new Claim(CustomerClaims.Role, customer.Role)
+                new Claim(CustomerClaims.Role, customer.Role),
+                new Claim(CustomerClaims.Version, customer.TokenVersion.ToString(), ClaimValueTypes.Integer32)
             }),
             // The signature: the API can later prove it made this token and nobody changed it
             SigningCredentials = new SigningCredentials(settings.SigningKey(), SecurityAlgorithms.HmacSha256)

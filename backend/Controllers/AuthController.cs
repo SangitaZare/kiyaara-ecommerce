@@ -107,10 +107,11 @@ public class AuthController(
     }
 
     // POST api/auth/change-password   (needs the current password)
+    // Answers with a new login for this device; logins on other devices stop working.
     [EnableRateLimiting("auth")]
     [Authorize]
     [HttpPost("change-password")]
-    public async Task<IActionResult> ChangePassword(ChangePasswordRequest request)
+    public async Task<ActionResult<AuthResponse>> ChangePassword(ChangePasswordRequest request)
     {
         var id = User.CustomerId();
         var customer = await db.Customers.FirstOrDefaultAsync(c => c.Id == id);
@@ -127,9 +128,11 @@ public class AuthController(
         customer.PasswordHash = hasher.HashPassword(customer, request.NewPassword);
         customer.ResetTokenHash = null;              // an old reset link stops working too
         customer.ResetTokenExpiresAt = null;
+        customer.TokenVersion++;                     // every other device's login stops working
         await db.SaveChangesAsync();
 
-        return NoContent();
+        // A fresh token for this device, so the person who changed it stays logged in here
+        return Ok(tokens.Create(customer));
     }
 
     // POST api/auth/forgot-password
@@ -194,6 +197,7 @@ public class AuthController(
         customer!.PasswordHash = hasher.HashPassword(customer, request.NewPassword);
         customer.ResetTokenHash = null;              // a link works only once
         customer.ResetTokenExpiresAt = null;
+        customer.TokenVersion++;                     // logs out every device, including a thief's
         await db.SaveChangesAsync();
 
         return NoContent();

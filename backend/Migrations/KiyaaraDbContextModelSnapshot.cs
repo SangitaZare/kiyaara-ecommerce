@@ -67,6 +67,9 @@ namespace Kiyaara.Api.Migrations
                         .HasColumnType("nvarchar(20)")
                         .HasDefaultValue("Customer");
 
+                    b.Property<int>("TokenVersion")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Email")

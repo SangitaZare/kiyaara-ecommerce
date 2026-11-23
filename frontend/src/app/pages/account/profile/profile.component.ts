@@ -74,7 +74,7 @@ export class ProfileComponent {
       next: () => {
         this.savingPassword.set(false);
         this.passwordForm.reset();
-        this.passwordMessage.set({ text: 'Password changed. Use it the next time you log in.', ok: true });
+        this.passwordMessage.set({ text: 'Password changed. You stay logged in here; any other devices have been logged out.', ok: true });
       },
       error: (err: HttpErrorResponse) => {
         this.savingPassword.set(false);
