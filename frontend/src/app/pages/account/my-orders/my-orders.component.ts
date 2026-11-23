@@ -69,7 +69,7 @@ export class MyOrdersComponent {
       itemsText: first ? (more > 0 ? `${first.name} and ${more} more` : first.name) : 'Order',
       placed: shortWhen(order.placedAt),
       note: order.paymentMethod === 'UPI'
-        ? 'Paid by UPI'
+        ? 'UPI (demo). No payment taken'
         : order.status === 'Cancelled' ? 'Cash on delivery. Nothing to pay.' : 'Cash on delivery',
       photos: order.items.slice(0, 2),
       // The progress bar is for orders still on their way
